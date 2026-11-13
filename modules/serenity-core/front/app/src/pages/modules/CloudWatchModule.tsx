@@ -37,12 +37,17 @@ export const CloudWatchModule: React.FC<CloudWatchModuleProps> = ({ setCurrentTa
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-mono font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                ACTIVE
+              <span className="text-xs font-mono font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                PREVIEW • ROADMAP
               </span>
-              <span className="text-xs font-mono text-slate-400">
-                e-serenity/serenity-ops/aws//modules/serenity-cloudwatch v1.1.0
-              </span>
+              <a
+                href="https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-mono text-slate-400 hover:text-violet-300 transition-colors"
+              >
+                e-serenity/serenity-ops/aws//modules/serenity-cloudwatch
+              </a>
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
               {t(

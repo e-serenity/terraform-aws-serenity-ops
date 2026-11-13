@@ -194,16 +194,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
             Scale-to-Zero
           </span>
         </div>
-        <p className="text-[11px] text-slate-400 flex items-center justify-between">
+        <p className="text-[11px] text-slate-400 flex items-center justify-between gap-2">
           <span>Crafted by e-serenity</span>
-          <a
-            href="https://github.com/e-serenity"
-            target="_blank"
-            rel="noreferrer"
-            className="text-sky-400 hover:text-sky-300 transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-          </a>
+          <span className="flex items-center gap-2">
+            <a
+              href="https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest"
+              target="_blank"
+              rel="noreferrer"
+              title="Terraform Registry"
+              className="text-violet-400 hover:text-violet-300 transition-colors font-mono text-[10px]"
+            >
+              TF
+            </a>
+            <a
+              href="https://github.com/e-serenity/terraform-aws-serenity-ops"
+              target="_blank"
+              rel="noreferrer"
+              title="GitHub Repository"
+              className="text-sky-400 hover:text-sky-300 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </span>
         </p>
       </div>
     </aside>

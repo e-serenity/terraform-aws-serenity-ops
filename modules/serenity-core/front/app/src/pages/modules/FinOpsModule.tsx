@@ -383,11 +383,16 @@ export const FinOpsModule: React.FC = () => {
                 'Upcoming Module • Monorepo'
               )}
             </span>
-            <span className="text-xs font-mono text-slate-400">
+            <a
+              href="https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-mono text-slate-400 hover:text-violet-300 transition-colors"
+            >
               e-serenity/serenity-ops/aws//modules/serenity-finops
-            </span>
-            <span className="text-xs font-mono text-slate-300 bg-slate-800 px-2.5 py-0.5 rounded border border-slate-700/60 ml-auto">
-              Early Access v0.8.0
+            </a>
+            <span className="text-xs font-mono text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20 ml-auto">
+              Roadmap • Coming Soon
             </span>
           </div>
 
@@ -505,20 +510,31 @@ export const FinOpsModule: React.FC = () => {
                   '100% deployed in your AWS account • Zero external access'
                 )}
               </span>
-              <a
-                href="https://github.com/e-serenity/terraform-aws-serenity-ops"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 font-medium"
-              >
-                <span>
-                  {t(
-                    'Suivre la sortie sur GitHub',
-                    'Follow release on GitHub'
-                  )}
-                </span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-violet-300 hover:text-violet-200 font-medium"
+                >
+                  <span>Terraform Registry</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <a
+                  href="https://github.com/e-serenity/terraform-aws-serenity-ops"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 font-medium"
+                >
+                  <span>
+                    {t(
+                      'Suivre la sortie sur GitHub',
+                      'Follow release on GitHub'
+                    )}
+                  </span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             </div>
           </div>
         </div>

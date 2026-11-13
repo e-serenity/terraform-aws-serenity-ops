@@ -23,20 +23,12 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
   const [copied, setCopied] = useState(false);
 
   const isBotModule = module.id === 'serenity-bot';
+  const isAvailable = module.isAvailable;
 
-  const getGithubUrl = (id: string) => {
-    switch (id) {
-      case 'serenity-core':
-      case 'serenity-bot':
-      case 'serenity-ses':
-      case 'serenity-cloudwatch':
-      case 'serenity-iam':
-      case 'serenity-finops':
-        return `https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/${id}`;
-      default:
-        return 'https://github.com/e-serenity/terraform-aws-serenity-ops';
-    }
-  };
+  const getGithubUrl = () => module.githubUrl || 'https://github.com/e-serenity/terraform-aws-serenity-ops';
+
+  const getRegistryUrl = () =>
+    module.registryUrl || 'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest';
 
   const getQuickstartUrl = () =>
     'https://github.com/e-serenity/terraform-aws-serenity-ops#usage';
@@ -46,12 +38,12 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
       case 'serenity-bot':
         return {
           resources: t(
-            'Service ECS Managed Instances (ARM64), Secrets Manager, Rôle IAM ReadOnlyAccess + Bedrock Converse API + AssumeRole scopé.',
-            'ECS Managed Instances Service (ARM64), Secrets Manager, IAM Role ReadOnlyAccess + Bedrock Converse API + scoped AssumeRole.'
+            'Service ECS Managed Instances (ARM64), Secrets Manager, Rôle IAM d’observabilité AWS + Bedrock Converse API + sts:AssumeRole scopé.',
+            'ECS Managed Instances Service (ARM64), Secrets Manager, AWS observability IAM Role + Bedrock Converse API + scoped sts:AssumeRole.'
           ),
           governance: t(
-            '0 port entrant (Slack Socket Mode). Lecture globale autonome pour le diagnostic RCA ; écriture bloquée sans validation humaine.',
-            '0 inbound ports (Slack Socket Mode). Autonomous global read for RCA diagnostics; write actions locked without human approval.'
+            '0 port entrant (Slack Socket Mode). Lecture autonome pour le diagnostic RCA ; écriture bloquée sans validation humaine.',
+            '0 inbound ports (Slack Socket Mode). Autonomous read for RCA diagnostics; write actions locked without human approval.'
           ),
         };
       case 'serenity-ses':
@@ -97,22 +89,21 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
   source  = "${module.registrySource}"
   version = "~> 0.1"
 
-  application            = "serenity-bot"
-  environment            = "prod"
-  region                 = "eu-west-3"
-  cluster_arn            = module.serenity_core.ecs_cluster_arn
-  capacity_provider_name = module.serenity_core.ecs_capacity_provider_name
-  subnet_ids             = module.serenity_core.private_subnet_ids
+  application = "serenity-bot"
+  environment = "prod"
+  region      = "eu-west-3"
 
   # ${t('Optionnel : raccorder à Serenity-Ops Hub (ou laisser vide en mode Standalone Slack)', 'Optional: connect to Serenity-Ops Hub (or leave empty for Standalone Slack mode)')}
   dynamodb_table_name    = module.serenity_core.dynamodb_hub_table_name
   history_retention_days = 90
 
   # ${t('Intégrations activables à la carte via variables Terraform', 'On-demand integrations enabled via Terraform variables')}
-  enable_datadog         = true
-  enable_gitlab          = true
+  enable_github  = true
+  enable_datadog = false
+  enable_gitlab  = false
 }`
-    : `module "${module.id.replace('serenity-', 'serenity_')}" {
+    : module.id === 'serenity-ses'
+    ? `module "serenity_ses" {
   source  = "${module.registrySource}"
   version = "~> 0.1"
 
@@ -120,6 +111,13 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
   environment             = "prod"
   serenity_ops_table_name = module.serenity_core.dynamodb_hub_table_name
   enable_serenity_agent   = true
+}`
+    : `# ${t('Module en cours de développement (Roadmap)', 'Upcoming module (Roadmap)')}
+module "${module.id.replace('serenity-', 'serenity_')}" {
+  source  = "${module.registrySource}"
+
+  environment             = "prod"
+  serenity_ops_table_name = module.serenity_core.dynamodb_hub_table_name
 }`;
 
   const handleCopy = () => {
@@ -204,11 +202,21 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-              Terraform Registry : {module.registrySource}
-            </span>
-            <span className="text-xs font-mono text-emerald-400">
-              v{module.version}
+            <a
+              href={getRegistryUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-violet-300 transition-colors inline-flex items-center gap-1"
+            >
+              <span>Terraform Registry : {module.registrySource}</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+            <span
+              className={`text-xs font-mono ${
+                isAvailable ? 'text-emerald-400' : 'text-amber-400'
+              }`}
+            >
+              {isAvailable ? `v${module.version}` : t('Roadmap', 'Roadmap')}
             </span>
           </div>
           <button
@@ -243,15 +251,14 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
             )}
           </span>
           <a
-            href={getGithubUrl(module.id)}
+            href={getGithubUrl()}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1 text-sky-400 hover:underline"
           >
-            {t(
-              'Voir le module sur GitHub',
-              'View module on GitHub'
-            )}{' '}
+            {isAvailable
+              ? t('Voir le module sur GitHub', 'View module on GitHub')
+              : t('Voir la roadmap sur GitHub', 'View roadmap on GitHub')}{' '}
             <ExternalLink className="w-3 h-3" />
           </a>
         </div>
@@ -305,6 +312,16 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
 
           <div className="flex items-center gap-2.5">
             <a
+              href={getRegistryUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-violet-300 hover:text-white text-xs font-medium border border-slate-700 transition-all"
+            >
+              <span>Terraform Registry</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+
+            <a
               href={getQuickstartUrl()}
               target="_blank"
               rel="noreferrer"
@@ -315,7 +332,7 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
             </a>
 
             <a
-              href={getGithubUrl(module.id)}
+              href={getGithubUrl()}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-medium transition-all shadow-sm"

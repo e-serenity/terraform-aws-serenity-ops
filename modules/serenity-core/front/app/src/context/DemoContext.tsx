@@ -18,10 +18,15 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
     title: 'Serenity Core',
     description:
       lang === 'fr'
-        ? 'Socle central Terraform, registre DynamoDB Hub (serenity-ops-hub), cluster ECS Managed Instances et VPC hybride.'
-        : 'Core Terraform foundation, DynamoDB Hub registry (serenity-ops-hub), ECS Managed Instances cluster and hybrid VPC.',
+        ? 'Socle central Terraform : registre DynamoDB Hub (serenity-ops-hub), Dashboard CloudFront OAC + Lambda Live API.'
+        : 'Core Terraform foundation: DynamoDB Hub registry (serenity-ops-hub), CloudFront OAC Dashboard + Live API Lambda.',
     registrySource: 'e-serenity/serenity-ops/aws//modules/serenity-core',
+    registryUrl:
+      'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-core',
+    githubUrl:
+      'https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/serenity-core',
     version: '0.1.0',
+    isAvailable: true,
     isCore: true,
     category: 'core',
     icon: 'Shield',
@@ -32,10 +37,15 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
     title: 'Serenity Bot',
     description:
       lang === 'fr'
-        ? 'Bot IA autonome (Bedrock Claude & Gemini + Slack Socket Mode) déployable seul avec Slack ou couplé à Serenity-Ops. Analyse les alertes en temps réel via ses accès AWS et ses intégrations activables en variables Terraform (GitLab, GitHub, Datadog, Grafana, MCP...).'
-        : 'Autonomous AI Bot (Bedrock Claude & Gemini + Slack Socket Mode) deployable standalone with Slack or coupled with Serenity-Ops. Analyzes alerts in real time via its AWS access and integrations enabled through Terraform variables (GitLab, GitHub, Datadog, Grafana, MCP...).',
+        ? 'Bot IA autonome (AWS Bedrock Claude & fallback optionnel + Slack Socket Mode) déployable seul ou couplé à Serenity-Ops. Corrèle AWS et vos intégrations Terraform (GitLab, GitHub, Datadog, Grafana, MCP...).'
+        : 'Autonomous AI Bot (AWS Bedrock Claude & optional fallback + Slack Socket Mode) deployable standalone or coupled with Serenity-Ops. Correlates AWS with your Terraform integrations (GitLab, GitHub, Datadog, Grafana, MCP...).',
     registrySource: 'e-serenity/serenity-ops/aws//modules/serenity-bot',
+    registryUrl:
+      'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-bot',
+    githubUrl:
+      'https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/serenity-bot',
     version: '0.1.0',
+    isAvailable: true,
     category: 'aiops',
     icon: 'Bot',
   },
@@ -48,10 +58,14 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
         : 'CloudWatch Alarm Management',
     description:
       lang === 'fr'
-        ? 'Permet de lister et superviser les alarmes CloudWatch existantes et d’en ajouter de nouvelles via son sous-agent aux droits d’écriture strictement limités.'
-        : 'Lists and monitors existing CloudWatch alarms and allows adding new alarms via its sub-agent with strictly limited write permissions.',
+        ? 'Centralisation de l’alerting CloudWatch (EventBridge/SNS) et création d’alarmes via le sous-agent scopé serenity-agent-cw (aperçu interactif, module Terraform à venir).'
+        : 'Centralized CloudWatch alerting (EventBridge/SNS) and alarm creation via the scoped serenity-agent-cw sub-agent (interactive preview, Terraform module coming soon).',
     registrySource: 'e-serenity/serenity-ops/aws//modules/serenity-cloudwatch',
-    version: '1.1.0',
+    registryUrl:
+      'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest',
+    githubUrl: 'https://github.com/e-serenity/terraform-aws-serenity-ops',
+    version: 'roadmap',
+    isAvailable: false,
     category: 'aiops',
     icon: 'Activity',
   },
@@ -67,7 +81,12 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
         ? 'Pool d’IP dédiées gérées, warming automatique, monitoring DMARC/SPF/DKIM et traitement IA des retours d’emails.'
         : 'Managed dedicated IP pool, automated IP warm-up, DMARC/SPF/DKIM monitoring and AI-driven bounce & complaint handling.',
     registrySource: 'e-serenity/serenity-ops/aws//modules/serenity-ses',
+    registryUrl:
+      'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-ses',
+    githubUrl:
+      'https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/serenity-ses',
     version: '0.1.0',
+    isAvailable: true,
     category: 'secops',
     icon: 'Mail',
   },
@@ -77,10 +96,14 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
     title: 'Zero-Trust IAM Auditor',
     description:
       lang === 'fr'
-        ? 'Audit en continu des privilèges IAM, détection des clés dormantes et nettoyage assisté par IA.'
-        : 'Continuous IAM privilege auditing, dormant access key detection and AI-assisted least-privilege cleanup.',
+        ? 'Audit en continu des privilèges IAM, détection des clés dormantes et nettoyage assisté par IA (module à venir).'
+        : 'Continuous IAM privilege auditing, dormant access key detection and AI-assisted least-privilege cleanup (upcoming module).',
     registrySource: 'e-serenity/serenity-ops/aws//modules/serenity-iam',
-    version: '0.9.0',
+    registryUrl:
+      'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest',
+    githubUrl: 'https://github.com/e-serenity/terraform-aws-serenity-ops',
+    version: 'roadmap',
+    isAvailable: false,
     category: 'secops',
     icon: 'Key',
   },
@@ -90,10 +113,14 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
     title: 'FinOps & Cost Optimization',
     description:
       lang === 'fr'
-        ? 'Analyse fine des coûts AWS, détection des ressources orphelines et recommandations de resizing.'
-        : 'Granular AWS cost analysis, orphan resource detection and Human-in-the-Loop right-sizing recommendations.',
+        ? 'Suivi natif des coûts de la suite Serenity-Ops + extension AWS globale à venir (ressources orphelines, resizing).'
+        : 'Native Serenity-Ops suite cost tracking + upcoming global AWS optimization module (orphan resources, right-sizing).',
     registrySource: 'e-serenity/serenity-ops/aws//modules/serenity-finops',
-    version: '0.8.0',
+    registryUrl:
+      'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest',
+    githubUrl: 'https://github.com/e-serenity/terraform-aws-serenity-ops',
+    version: 'roadmap',
+    isAvailable: false,
     category: 'finops',
     icon: 'DollarSign',
   },
@@ -111,10 +138,10 @@ export const getAgentsList = (lang: Language): AgentInfo[] => [
     privilege: 'READ (AUTO) + WRITE ON APPROVAL',
     targetModule: 'serenity-bot',
     tools: [
-      'AWS ReadOnlyAccess (ECS, EC2, RDS, ElastiCache, IAM, VPC, Logs...)',
+      'AWS Read-Only Observability (CloudWatch Alarms/Metrics/Logs, ECS, RDS, CloudTrail, DynamoDB, Lambda)',
       'Intégrations Terraform (GitLab, GitHub, Datadog, Grafana, MCP...)',
       'Slack Socket Mode (#ops-alerts, #prod-incidents)',
-      'Actions sous validation : ECS Force Redeploy, CI/CD Retry, Incident Wiki',
+      'Circuit HITL : Approbation Slack / Web → sts:AssumeRole scopé',
     ],
     writeScope:
       lang === 'fr'
@@ -126,8 +153,8 @@ export const getAgentsList = (lang: Language): AgentInfo[] => [
     name: 'serenity-agent-cw',
     role:
       lang === 'fr'
-        ? 'Sous-Agent CloudWatch : Permet de lister les alarmes existantes et d’en ajouter de nouvelles (modification/suppression limitée aux alarmes créées par l’agent)'
-        : 'CloudWatch Sub-Agent: Lists existing alarms and adds new ones (modifications/deletions strictly limited to agent-created alarms)',
+        ? 'Sous-Agent CloudWatch (câblé côté Python, module Terraform à venir) : Création d’alarmes tagguées ManagedBy=serenity-ops'
+        : 'CloudWatch Sub-Agent (wired in Python, Terraform module coming soon): Creates alarms tagged ManagedBy=serenity-ops',
     privilege: 'SCOPED WRITE (ON APPROVAL)',
     targetModule: 'serenity-cloudwatch',
     tools: [
@@ -139,7 +166,7 @@ export const getAgentsList = (lang: Language): AgentInfo[] => [
       lang === 'fr'
         ? 'Droit d’écriture très limité : uniquement les alarmes CloudWatch tagguées ManagedBy=serenity-ops'
         : 'Strictly limited write scope: only CloudWatch alarms tagged ManagedBy=serenity-ops',
-    status: 'ACTIVE',
+    status: 'STANDBY',
   },
   {
     name: 'serenity-agent-ses',
@@ -180,6 +207,7 @@ interface DemoContextType {
   agents: AgentInfo[];
   installedModules: Set<string>;
   toggleModule: (moduleId: string) => void;
+  resetDemo: () => void;
   retentionDays: RetentionDays;
   setRetentionDays: (days: RetentionDays) => void;
   sesSummary: SESStateSummary;
@@ -195,7 +223,7 @@ interface DemoContextType {
 
 const DemoContext = createContext<DemoContextType | null>(null);
 
-const DEFAULT_DEMO_MODULES = ['serenity-core', 'serenity-bot', 'serenity-ses', 'serenity-cloudwatch'];
+const DEFAULT_DEMO_MODULES = ['serenity-core', 'serenity-bot', 'serenity-ses'];
 
 export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
@@ -520,24 +548,39 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const trimmed = text.trim();
     if (!trimmed) return;
 
+    const now = new Date();
+    const timeStr = now.toTimeString().slice(0, 5);
+    const userMsg: BotChatMessage = {
+      id: `msg-u-${Date.now()}`,
+      sender: 'user',
+      author: isLiveMode ? 'Operator (Web Console)' : 'You (Web Console)',
+      channel: 'Web Console',
+      timestamp: timeStr,
+      text: trimmed,
+    };
+
     if (isLiveMode) {
       fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: trimmed }),
       }).catch(() => {});
-    }
 
-    const now = new Date();
-    const timeStr = now.toTimeString().slice(0, 5);
-    const userMsg: BotChatMessage = {
-      id: `msg-u-${Date.now()}`,
-      sender: 'user',
-      author: 'You (Web Console)',
-      channel: 'Web Console',
-      timestamp: timeStr,
-      text: trimmed,
-    };
+      const ackMsg: BotChatMessage = {
+        id: `msg-b-${Date.now() + 1}`,
+        sender: 'bot',
+        author: 'Serenity-Ops Hub',
+        channel: 'Web Console',
+        timestamp: timeStr,
+        text: t(
+          'Message enregistré dans DynamoDB (SERENITY#CHAT). Pour les investigations temps réel interactives, utilisez @Serenity-Ops dans Slack.',
+          'Message saved to DynamoDB (SERENITY#CHAT). For real-time interactive investigations, mention @Serenity-Ops in Slack.'
+        ),
+        toolsUsed: ['DynamoDB Hub'],
+      };
+      setCustomChatMessages((prev) => [...prev, userMsg, ackMsg]);
+      return;
+    }
 
     const lower = trimmed.toLowerCase();
     let replyText = '';
@@ -657,6 +700,23 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
   };
 
+  const resetDemo = () => {
+    setIsLiveMode(false);
+    setDemoInstalledModules(new Set(DEFAULT_DEMO_MODULES));
+    setEmailActionStatuses({
+      'evt-01': 'PENDING',
+      'evt-02': 'APPLIED',
+      'evt-03': 'APPLIED',
+    });
+    setIncidentStatuses({
+      'inc-2026-10-27-01': 'PENDING_APPROVAL',
+      'inc-2026-10-27-02': 'APPROVED',
+    });
+    setCustomIncidents([]);
+    setCustomChatMessages([]);
+    setRetentionDays(90);
+  };
+
   return (
     <DemoContext.Provider
       value={{
@@ -675,6 +735,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         agents: getAgentsList(language),
         installedModules,
         toggleModule,
+        resetDemo,
         retentionDays,
         setRetentionDays,
         sesSummary: isLiveMode && liveSesSummary ? liveSesSummary : sesSummary,

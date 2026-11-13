@@ -18,6 +18,8 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
   const {
     isLiveMode,
+    hasLiveBackend,
+    setMode,
     accountId,
     environment,
     region,
@@ -25,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
     refreshLiveState,
     installedModules,
     toggleModule,
+    resetDemo,
     language,
     setLanguage,
     modules,
@@ -105,16 +108,31 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
               <span>Live AWS</span>
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
+            <button
+              onClick={() => setMode('demo')}
+              title={t('Basculer vers la démo interactive', 'Switch to interactive demo')}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-colors"
+            >
+              {t('Démo', 'Demo')}
+            </button>
           </div>
         ) : (
-          <div className="relative">
+          <div className="relative flex items-center gap-2">
+            {hasLiveBackend && (
+              <button
+                onClick={() => setMode('live')}
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition-colors"
+              >
+                {t('Retour Live', 'Back to Live')}
+              </button>
+            )}
             <button
               onClick={() => setShowSimulator(!showSimulator)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-medium transition-all shadow-sm"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>{t('Simulateur Démo', 'Demo Simulator')}</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>{t('Mode Démo', 'Demo Mode')}</span>
+              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
             </button>
 
             {showSimulator && (
@@ -180,11 +198,19 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
                     })}
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-                  {t(
-                    '💡 Désactiver serenity-bot permet de tester la plateforme sans IA (les modules SES et CloudWatch restent utilisables en mode standard).',
-                    '💡 Disabling serenity-bot lets you test the platform without AI (SES and CloudWatch modules remain usable in standard mode).'
-                  )}
+                <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between gap-2 text-[11px] text-slate-400 leading-relaxed">
+                  <span>
+                    {t(
+                      '💡 Désactiver serenity-bot teste la plateforme sans IA.',
+                      '💡 Disabling serenity-bot tests the platform without AI.'
+                    )}
+                  </span>
+                  <button
+                    onClick={resetDemo}
+                    className="shrink-0 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 text-[10px] font-medium transition-colors"
+                  >
+                    {t('Réinitialiser', 'Reset')}
+                  </button>
                 </div>
               </div>
             )}

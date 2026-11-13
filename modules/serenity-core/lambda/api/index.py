@@ -133,20 +133,24 @@ def _get_live_state():
     except Exception:
         pass
 
-    inc_items = _query_pk(table, "SERENITY#INCIDENTS", limit=50)
+    ops_items = _query_pk(table, "SERENITY#OPS", limit=50)
+    legacy_inc_items = _query_pk(table, "SERENITY#INCIDENTS", limit=50)
+    inc_items = [
+        it for it in ops_items if it.get("SK", "").startswith("INCIDENT#")
+    ] + legacy_inc_items
     incidents = []
     for item in inc_items:
         incidents.append({
-            "id": item.get("id", item.get("SK", "")),
-            "timestamp": item.get("timestamp", ""),
+            "id": item.get("id") or item.get("incident_id") or item.get("SK", ""),
+            "timestamp": item.get("timestamp") or item.get("created_at", ""),
             "kind": item.get("kind", "ALERT"),
             "source": item.get("source", "Slack (@Serenity-Ops)"),
             "requester": item.get("requester", ""),
             "trigger": item.get("trigger", ""),
             "severity": item.get("severity", "INFO"),
-            "mcpTraces": item.get("mcpTraces", []),
+            "mcpTraces": item.get("mcpTraces") or item.get("mcp_traces") or [],
             "rca": item.get("rca", ""),
-            "proposedAction": item.get("proposedAction"),
+            "proposedAction": item.get("proposedAction") or item.get("proposed_action"),
         })
 
     chat_items = _query_pk(table, "SERENITY#CHAT", limit=50, scan_forward=True)
