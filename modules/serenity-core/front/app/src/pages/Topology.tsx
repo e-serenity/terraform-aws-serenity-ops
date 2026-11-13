@@ -38,12 +38,12 @@ export const Topology: React.FC<TopologyProps> = ({ setCurrentTab }) => {
     {
       step: '02',
       title: t(
-        '2. Enquête Globale (Lecture Autonome)',
-        '2. Global Investigation (Autonomous Read)'
+        '2. Enquête d’Observabilité (Lecture Scopée)',
+        '2. Observability Investigation (Scoped Read)'
       ),
       desc: t(
-        'Serenity Bot interroge tous les services AWS autorisés (ECS, RDS, EC2, ElastiCache, IAM, VPC, Logs...) et les intégrations activées en variables Terraform (GitLab, GitHub, Datadog, Grafana...).',
-        'Serenity Bot queries all authorized AWS services (ECS, RDS, EC2, ElastiCache, IAM, VPC, Logs...) and integrations enabled via Terraform variables (GitLab, GitHub, Datadog, Grafana...).'
+        'Serenity Bot interroge les APIs d’observabilité AWS autorisées (CloudWatch, Logs, ECS, RDS, CloudTrail, métadonnées DynamoDB/Lambda — sans lecture de données S3/DynamoDB applicatives) et les intégrations activées en variables Terraform (GitLab, GitHub, Datadog, Grafana...).',
+        'Serenity Bot queries authorized AWS observability APIs (CloudWatch, Logs, ECS, RDS, CloudTrail, DynamoDB/Lambda metadata — without reading application S3/DynamoDB payloads) and integrations enabled via Terraform variables (GitLab, GitHub, Datadog, Grafana...).'
       ),
     },
     {
@@ -82,8 +82,8 @@ export const Topology: React.FC<TopologyProps> = ({ setCurrentTab }) => {
           </h1>
           <p className="text-sm text-slate-400 mt-1 max-w-3xl">
             {t(
-              'Séparation claire entre l’investigation autonome à large spectre (Read-Only global du Bot de base) et les actions d’écriture ciblées soumises à validation humaine.',
-              'Clear separation between broad autonomous investigation (Global Read-Only of the Base Bot) and targeted write actions subject to human approval.'
+              'Séparation claire entre l’investigation autonome d’observabilité (Read-Only borné sans accès aux données applicatives) et les actions d’écriture ciblées soumises à validation humaine.',
+              'Clear separation between autonomous observability investigation (Scoped Read-Only with no application payload access) and targeted write actions subject to human approval.'
             )}
           </p>
         </div>
@@ -181,8 +181,8 @@ export const Topology: React.FC<TopologyProps> = ({ setCurrentTab }) => {
                 <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                   <Eye className="w-4 h-4" />
                   {t(
-                    '1. Mode Autonome : Lecture Globale (Sans Attente)',
-                    '1. Autonomous Mode: Global Read (Zero Wait)'
+                    '1. Mode Autonome : Observabilité Bornée (Sans Attente)',
+                    '1. Autonomous Mode: Scoped Observability Read (Zero Wait)'
                   )}
                 </span>
                 <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">
@@ -191,8 +191,8 @@ export const Topology: React.FC<TopologyProps> = ({ setCurrentTab }) => {
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
                 {t(
-                  'Pour l’analyse d’alertes temps réel (RCA) et le Chatbot 24/7, le bot de base interroge librement tous les services AWS où il a des droits de lecture ainsi que les intégrations activées dans ses variables Terraform (GitLab, GitHub, Datadog, Grafana, serveurs MCP...).',
-                  'For real-time alert analysis (RCA) and the 24/7 Chatbot, the base bot freely queries any AWS service where it holds read permissions along with integrations enabled in its Terraform variables (GitLab, GitHub, Datadog, Grafana, MCP servers...).'
+                  'Pour l’analyse d’alertes temps réel (RCA) et le Chatbot 24/7, le bot de base interroge les APIs d’observabilité AWS (CloudWatch, Logs, ECS, RDS, CloudTrail, métadonnées DynamoDB/Lambda — sans accès S3/items applicatifs sauf opt-in) ainsi que les intégrations activées en variables Terraform (GitLab, GitHub, Datadog, Grafana, serveurs MCP...).',
+                  'For real-time alert analysis (RCA) and the 24/7 Chatbot, the base bot queries AWS observability APIs (CloudWatch, Logs, ECS, RDS, CloudTrail, DynamoDB/Lambda metadata — no S3 object or app item reads unless opted in) along with integrations enabled in its Terraform variables (GitLab, GitHub, Datadog, Grafana, MCP servers...).'
                 )}
               </p>
             </div>

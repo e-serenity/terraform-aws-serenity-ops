@@ -21,6 +21,7 @@ import {
 export const BotModule: React.FC = () => {
   const {
     t,
+    isLiveMode,
     incidents,
     chatMessages,
     sendChatMessage,
@@ -73,12 +74,17 @@ export const BotModule: React.FC = () => {
                 <span className="text-xs font-mono font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                   ACTIVE
                 </span>
-                <span className="text-xs font-mono text-slate-400">
+                <a
+                  href="https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-bot"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-mono text-slate-400 hover:text-violet-300 transition-colors"
+                >
                   e-serenity/serenity-ops/aws//modules/serenity-bot v0.1.0
-                </span>
+                </a>
                 <span className="text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                   <Cpu className="w-3 h-3" />
-                  Claude Sonnet 4.6 + Gemini Fallback
+                  AWS Bedrock (Claude) + Optional Fallback
                 </span>
               </div>
               <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
@@ -95,26 +101,28 @@ export const BotModule: React.FC = () => {
                 )}
               </p>
 
-              <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
-                  {t('Variables Terraform :', 'Terraform Vars:')}
-                </span>
-                <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
-                  Slack: #ops-alerts, #prod
-                </span>
-                <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
-                  enable_datadog=true
-                </span>
-                <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
-                  enable_gitlab=true
-                </span>
-                <span className="text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded">
-                  enable_github=false
-                </span>
-                <span className="text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded">
-                  enable_grafana=false
-                </span>
-              </div>
+              {!isLiveMode && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
+                    {t('Variables Terraform (Démo) :', 'Terraform Vars (Demo):')}
+                  </span>
+                  <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
+                    Slack: #ops-alerts, #prod
+                  </span>
+                  <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
+                    enable_datadog=true
+                  </span>
+                  <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
+                    enable_gitlab=true
+                  </span>
+                  <span className="text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded">
+                    enable_github=false
+                  </span>
+                  <span className="text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded">
+                    enable_grafana=false
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="bg-slate-950/90 border border-slate-800 rounded-xl px-4 py-3 shrink-0 flex items-center gap-2.5 self-start lg:self-center">
@@ -207,22 +215,28 @@ export const BotModule: React.FC = () => {
                         </span>
 
                         {action.status === 'PENDING_APPROVAL' && (
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={() => approveAction(inc.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all shadow-md shadow-emerald-900/30"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>{t('Approuver', 'Approve')}</span>
-                            </button>
-                            <button
-                              onClick={() => rejectAction(inc.id)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/50 text-slate-300 hover:text-rose-400 border border-slate-700 text-xs transition-all"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                              <span>{t('Rejeter', 'Reject')}</span>
-                            </button>
-                          </div>
+                          isLiveMode ? (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] text-amber-300 font-medium bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20 shrink-0">
+                              {t('Approuver dans Slack (@Serenity-Ops)', 'Approve in Slack (@Serenity-Ops)')}
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                onClick={() => approveAction(inc.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all shadow-md shadow-emerald-900/30"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>{t('Approuver', 'Approve')}</span>
+                              </button>
+                              <button
+                                onClick={() => rejectAction(inc.id)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/50 text-slate-300 hover:text-rose-400 border border-slate-700 text-xs transition-all"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                                <span>{t('Rejeter', 'Reject')}</span>
+                              </button>
+                            </div>
+                          )
                         )}
 
                         {action.status === 'APPROVED' && (

@@ -38,9 +38,14 @@ export const SESModule: React.FC<SESModuleProps> = ({ setCurrentTab }) => {
               <span className="text-xs font-mono font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                 ACTIVE
               </span>
-              <span className="text-xs font-mono text-slate-400">
+              <a
+                href="https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-ses"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-mono text-slate-400 hover:text-violet-300 transition-colors"
+              >
                 e-serenity/serenity-ops/aws//modules/serenity-ses v0.1.0
-              </span>
+              </a>
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
               {t(

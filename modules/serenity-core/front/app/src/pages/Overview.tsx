@@ -304,7 +304,7 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
                         {mod.title}
                       </h3>
                       <span className="text-[11px] font-mono text-slate-400">
-                        v{mod.version}
+                        {mod.isAvailable ? `v${mod.version}` : t('Roadmap (Preview)', 'Roadmap (Preview)')}
                       </span>
                     </div>
                   </div>
@@ -325,9 +325,15 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
                 </p>
 
                 <div className="pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-xs gap-2">
-                  <span className="text-[11px] font-mono text-slate-400 truncate">
+                  <a
+                    href={mod.registryUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[11px] font-mono text-slate-400 hover:text-violet-300 truncate transition-colors"
+                  >
                     {mod.registrySource}
-                  </span>
+                  </a>
                   {mod.isCore ? (
                     <span className="text-slate-400 text-[11px] font-mono shrink-0">
                       {t('Socle core', 'Core module')}

@@ -1,5 +1,6 @@
 import functools
 import json
+import re
 import time
 from typing import Any
 import boto3
@@ -10,6 +11,136 @@ from app.core.utils.logging import get_logger
 
 logger = get_logger("integrations.aws")
 MAX_PAYLOAD_SIZE = 35_000
+
+_LOG_PRIORITY_PATTERN = re.compile(
+    r"(?:(?i:\b(?:error|critical|fatal|panic)\b)|Traceback|Exception|[A-Za-z0-9_.]+Error\b|"
+    r'"level"\s*:\s*"(?i:error|fatal|critical)"|level=(?i:error|fatal|critical)\b)'
+)
+
+
+def _clip_long_line(line: str, max_chars: int) -> str:
+    """Clips a single oversized log line while preserving both its start and end."""
+    if len(line) <= max_chars:
+        return line
+    if max_chars <= 40:
+        return line[-max_chars:]
+    omitted = len(line) - max_chars
+    marker = f" ... [truncated {omitted} chars] ... "
+    usable = max(20, max_chars - len(marker))
+    head_len = int(usable * 0.4)
+    tail_len = usable - head_len
+    return f"{line[:head_len]}{marker}{line[-tail_len:]}"
+
+
+def _render_selected_lines(lines: list[str], selected: set[int]) -> str:
+    """Renders selected line indices in chronological order with omission markers."""
+    output: list[str] = []
+    prev_idx = -1
+    for idx in sorted(selected):
+        if prev_idx != -1 and idx > prev_idx + 1:
+            omitted = idx - prev_idx - 1
+            output.append(f"... [{omitted} log line(s) omitted] ...")
+        elif prev_idx == -1 and idx > 0:
+            output.append(f"... [{idx} log line(s) omitted] ...")
+        output.append(lines[idx])
+        prev_idx = idx
+    if prev_idx != -1 and prev_idx < len(lines) - 1:
+        omitted_tail = len(lines) - 1 - prev_idx
+        output.append(f"... [{omitted_tail} log line(s) omitted] ...")
+    return "\n".join(output)
+
+
+def _truncate_log_lines(lines: list[str], max_chars: int = MAX_PAYLOAD_SIZE) -> str:
+    """Deterministically truncates logs using head + tail + error/traceback priority windows.
+
+    Preserves the opening lines, the final lines (so trailing stacktraces are never lost),
+    and surrounding context around ERROR/Exception/Traceback lines within `max_chars`.
+    """
+    if not lines:
+        return ""
+
+    full_text = "\n".join(lines)
+    if len(full_text) <= max_chars:
+        return full_text
+
+    if len(lines) == 1:
+        return _clip_long_line(lines[0], max_chars)
+
+    per_line_cap = max(250, max_chars // 4)
+    normalized = [_clip_long_line(line, per_line_cap) for line in lines]
+    normalized_text = "\n".join(normalized)
+    if len(normalized_text) <= max_chars:
+        return normalized_text
+
+    n = len(normalized)
+    marker_reserve = min(800, max(80, max_chars // 8))
+    budget = max(100, max_chars - marker_reserve)
+
+    selected: set[int] = set()
+    used_chars = 0
+
+    def try_add(idx: int, limit: int) -> bool:
+        nonlocal used_chars
+        if idx in selected:
+            return True
+        cost = len(normalized[idx]) + (1 if selected else 0)
+        if used_chars + cost > limit:
+            return False
+        selected.add(idx)
+        used_chars += cost
+        return True
+
+    # 1. Preserve tail (~40% of budget) so the latest failure and stacktrace are kept
+    tail_limit = int(budget * 0.40)
+    for idx in range(n - 1, -1, -1):
+        if not try_add(idx, tail_limit) and idx != n - 1:
+            break
+    if (n - 1) not in selected and len(normalized[n - 1]) <= budget:
+        try_add(n - 1, budget)
+
+    # 2. Preserve head (~20% of budget) for initial request/startup context
+    head_limit = used_chars + int(budget * 0.20)
+    for idx in range(n):
+        if not try_add(idx, head_limit) and idx != 0:
+            break
+    if 0 not in selected and used_chars + len(normalized[0]) + 1 <= budget:
+        try_add(0, budget)
+
+    # 3. Prioritize error/exception/traceback lines first (most recent first),
+    # then expand tight context (-1/+1..+3), then wider context (-2/+4..+8)
+    # so trailing INFO lines after one error never starve other error lines.
+    priority_indices = [i for i, line in enumerate(normalized) if _LOG_PRIORITY_PATTERN.search(line)]
+    for err_idx in reversed(priority_indices):
+        try_add(err_idx, budget)
+    for err_idx in reversed(priority_indices):
+        for offset in (1, 2, 3, -1):
+            idx = err_idx + offset
+            if 0 <= idx < n:
+                try_add(idx, budget)
+    for err_idx in reversed(priority_indices):
+        for offset in (4, 5, 6, 7, 8, -2):
+            idx = err_idx + offset
+            if 0 <= idx < n:
+                try_add(idx, budget)
+
+    # 4. Use any leftover budget to extend tail contiguously, then head contiguously
+    if used_chars < budget:
+        for idx in range(n - 1, -1, -1):
+            if idx in selected:
+                continue
+            if not try_add(idx, budget):
+                break
+        for idx in range(n):
+            if idx in selected:
+                continue
+            if not try_add(idx, budget):
+                break
+
+    rendered = _render_selected_lines(normalized, selected)
+    if len(rendered) > max_chars:
+        # Middle-clip preserves both head and trailing stacktrace if markers pushed past max_chars
+        return _clip_long_line(rendered, max_chars)
+    return rendered
 
 
 def _safe_wrapper(fn):
@@ -140,12 +271,15 @@ def aws_cloudwatch_get_log_events(log_group_name: str, filter_pattern: str = "",
     if not events:
         return f"No log events found in `{log_group_name}` matching pattern '{filter_pattern}'."
 
-    lines = []
+    lines: list[str] = []
     for ev in events:
         msg = (ev.get("message") or "").strip()
-        lines.append(f"[{ev.get('timestamp')}] {msg}")
+        event_block = f"[{ev.get('timestamp')}] {msg}"
+        lines.extend(event_block.splitlines())
 
-    return f"Logs from `{log_group_name}`:\n" + "\n".join(lines)[:MAX_PAYLOAD_SIZE]
+    header = f"Logs from `{log_group_name}`:\n"
+    body = _truncate_log_lines(lines, max_chars=MAX_PAYLOAD_SIZE - len(header))
+    return f"{header}{body}"
 
 
 @tool
@@ -199,8 +333,7 @@ def aws_lambda_get_function(function_name: str) -> str:
     Use this tool when investigating serverless backend errors or latency timeouts.
     """
     client = boto3.client("lambda", region_name=settings.aws_region)
-    resp = client.get_function(FunctionName=function_name)
-    cfg = resp.get("Configuration", {})
+    cfg = client.get_function_configuration(FunctionName=function_name)
     if not cfg:
         return f"Lambda function `{function_name}` not found."
 

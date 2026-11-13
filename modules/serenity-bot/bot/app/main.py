@@ -11,6 +11,7 @@ import uvicorn
 
 from app.config import settings
 from app.core import confirmations, hub
+from app.core.prerequisites import prerequisites_check
 from app.core.utils.logging import get_logger, log_message, setup_logging
 from app.core.utils.redaction import redact_secrets
 from app.integrations import (
@@ -31,6 +32,7 @@ logger = get_logger("main")
 slack_app = App(token=settings.slack_bot_token)
 health_app = FastAPI(title="Serenity-Ops Health Service")
 socket_handler: SocketModeHandler | None = None
+_startup_prerequisites: dict[str, Any] | None = None
 
 MAX_SLACK_TEXT_SIZE = 39_000
 
@@ -285,13 +287,15 @@ def api_health():
             "orchestrator": "serenity-ops",
             "slack_connected": is_connected,
             "registered_modules": [m["id"] for m in active_items],
+            "prerequisites": _startup_prerequisites,
         },
         status_code=200 if is_connected else 503,
     )
 
 
 def start() -> None:
-    global socket_handler
+    global socket_handler, _startup_prerequisites
+    _startup_prerequisites = prerequisites_check()
     threading.Thread(
         target=lambda: uvicorn.run(health_app, host="127.0.0.1", port=settings.health_port, log_level="warning"),
         daemon=True,

@@ -8,7 +8,10 @@ export interface ModuleInfo {
   title: string;
   description: string;
   registrySource: string;
+  registryUrl: string;
+  githubUrl: string;
   version: string;
+  isAvailable: boolean;
   isCore?: boolean;
   category: 'core' | 'secops' | 'aiops' | 'finops';
   icon: string;

@@ -1,23 +1,19 @@
-<div align="center">
-
 # 🤖 Serenity-Bot (`modules/serenity-bot`)
 
 **Autonomous RCA & Human-in-the-Loop AI Orchestrator for AWS, Powered by Bedrock & Slack Socket Mode.**
 
 [![Terraform Module](https://img.shields.io/badge/Terraform_Registry-e--serenity%2Fserenity--ops%2Faws%2F%2Fmodules%2Fserenity--bot-7B42BC?style=flat-square&logo=terraform&logoColor=white)](https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-bot)
 [![AWS Bedrock](https://img.shields.io/badge/AI-AWS_Bedrock_(Claude_Sonnet)-FF9900?style=flat-square&logo=amazon-web-services&logoColor=white)](https://aws.amazon.com/bedrock/)
-[![Zero Inbound Ports](https://img.shields.io/badge/Network-Slack_Socket_Mode_(0_Inbound_Ports)-10B981?style=flat-square)](ecs-service.tf)
+[![Zero Inbound Ports](https://img.shields.io/badge/Network-Slack_Socket_Mode_(0_Inbound_Ports)-10B981?style=flat-square)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/modules/serenity-bot/ecs-service.tf)
 [![Standalone or Hub](https://img.shields.io/badge/Mode-Self--Contained_VPC_&_ECS_%7C_BYO_ECS_Cluster-3B82F6?style=flat-square)](#deployment-modes)
 
 [Key Capabilities](#key-capabilities) · [Security Model (2 Modes)](#security--iam-permission-model) · [Deployment Modes](#deployment-modes) · [Container Image: Default `:stable` vs Private AWS ECR](#container-image-default-stable-vs-private-aws-ecr-recommended-for-production) · [Inputs](#inputs) · [Outputs](#outputs)
 
-<code>source = "e-serenity/serenity-ops/aws//modules/serenity-bot"</code>
-
-</div>
+`source = "e-serenity/serenity-ops/aws//modules/serenity-bot"`
 
 ## Key Capabilities
 
-**Serenity-Bot** is the AI CloudSecOps & AIOps orchestrator of the **[Serenity-Ops](../..)** suite. It runs as a private container on **AWS ECS (ARM64)** with no inbound ports exposed to the internet via **Slack Socket Mode**, and communicates privately with **AWS Bedrock**.
+**Serenity-Bot** is the AI CloudSecOps & AIOps orchestrator of the **[Serenity-Ops](https://github.com/e-serenity/terraform-aws-serenity-ops)** suite. It runs as a private container on **AWS ECS (ARM64)** with no inbound ports exposed to the internet via **Slack Socket Mode**, and communicates privately with **AWS Bedrock**.
 
 1. **Real-Time Alert Analysis (RCA):** Listens to your Slack alert channels (where invited) or EventBridge, correlates signals across AWS services (`CloudWatch Alarms/Metrics/Logs`, `ECS`, `RDS`, `CloudTrail`, `DynamoDB`, `Lambda`, plus custom MCP servers) as well as your opt-in integrations (`GitHub`, `GitLab`, `Datadog`, `Grafana`) and your Terraform `application_context` map, and posts an actionable Root Cause Analysis in-thread.
 2. **Web & Slack Chatbot:** Answers infrastructure, log, and deployment questions in real time (*"Which alarms are currently firing?"*, *"Which GitLab commit caused the RDS latency spike?"*) via Slack or inside the `serenity-ops` Web Console.
@@ -28,7 +24,7 @@
 
 | Operating Mode | Permission Scope | Human Approval | Primary Use Cases |
 | :--- | :--- | :---: | :--- |
-| **Mode 1: Global Read (`READ AUTO`)** | Cross-service AWS read access (`ReadOnlyAccess`) + opt-in Terraform connectors (`GitLab`, `Datadog`...) | ❌ Not required (autonomous) | Automated Alert RCA (`CloudWatch`, `ECS`, `RDS`, `CloudTrail`, `DynamoDB`, `Lambda`), log/commit correlation, and Chatbot queries. |
+| **Mode 1: Scoped Observability Read (`READ AUTO`)** | Least-privilege AWS observability policy (`cloudwatch:Describe*/GetMetric*`, `logs:FilterLogEvents/Get*/Describe*`, `ecs:Describe*/List*`, `rds:Describe*`, `cloudtrail:LookupEvents`, `dynamodb:DescribeTable/ListTables`, `lambda:GetFunctionConfiguration/ListFunctions` — no application payload reads; opt-in `enable_aws_readonly_access` / `additional_task_iam_policies`) + opt-in Terraform connectors (`GitLab`, `Datadog`...) | ❌ Not required (autonomous) | Automated Alert RCA (`CloudWatch`, `ECS`, `RDS`, `CloudTrail`, `DynamoDB`, `Lambda`), log/commit correlation, and Chatbot queries. |
 | **Mode 2: Controlled Write (`WRITE ON APPROVAL`)** | `sts:AssumeRole` delegation to tag-scoped sub-agents (`ManagedBy=serenity-ops`) | ✅ **Mandatory** (`Approve` / `Reject` via Slack or Web) | Quarantining SES bounced addresses (`serenity-agent-ses`), creating tagged CloudWatch alarms (`serenity-agent-cw`) *(ECS service rollbacks on roadmap)*. |
 
 ## Deployment Modes
@@ -97,7 +93,7 @@ Serenity-Bot uses a resilient multi-provider LLM architecture:
 ### 1. Primary Engine: AWS Bedrock (Anthropic Claude)
 By default, the bot communicates privately with **AWS Bedrock** via VPC Endpoints (`enable_bedrock_endpoint = true`) with zero outbound internet transit.
 
-> [!IMPORTANT]
+> **Important:**
 > **Anthropic Claude on AWS Bedrock (One-Time Use Case Form):**
 > Serverless foundation models are now automatically enabled across all AWS commercial regions upon first invocation—the legacy "Model access" page has been retired by AWS. 
 > However, for **Anthropic models**, first-time users must submit their company & use case details in the **Amazon Bedrock Console** before access is completed, as required for AWS Marketplace subscription validation.
@@ -115,7 +111,7 @@ To let you test `serenity-bot` in a single `terraform apply` without building an
 ```hcl
 image = "ghcr.io/e-serenity/serenity-bot:stable"
 ```
-> [!NOTE]
+> **Note:**
 > While convenient for evaluation and quickstarts, pulling from an external registry (`ghcr.io`) introduces an external dependency during ECS task launches or restarts.
 
 ### 2. Production Best Practice (`create_ecr_repository = true`): Self-Hosted in AWS ECR
@@ -139,7 +135,7 @@ For production environments, we recommend hosting the container image inside you
    ```bash
    terraform apply -target=module.serenity_bot.aws_ecr_repository.this
    ```
-3. **Build the `linux/arm64` image from [`modules/serenity-bot/bot`](./bot) and push it to your ECR repository:**
+3. **Build the `linux/arm64` image from [`modules/serenity-bot/bot`](https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/serenity-bot/bot) and push it to your ECR repository:**
    *(Works natively on Apple Silicon Macs, or on Linux/Windows x86_64 via `docker buildx`)*
    ```bash
    AWS_REGION="eu-west-3"
@@ -188,6 +184,7 @@ For production environments, we recommend hosting the container image inside you
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_additional_task_iam_policies"></a> [additional\_task\_iam\_policies](#input\_additional\_task\_iam\_policies) | Optional map of additional IAM policy ARNs (e.g., { CustomMCPRead = "arn:aws:iam::..." }) to attach to the Serenity-Bot ECS task role | `map(string)` | `{}` | no |
 | <a name="input_application"></a> [application](#input\_application) | Application and ECS service name (e.g., serenity-bot) | `string` | `"serenity-bot"` | no |
 | <a name="input_application_context"></a> [application_context](#input\_application_context) | Custom business and technical context about your workloads (services, tech stacks, repositories, log groups, criticality, runbooks). Injected into the AI prompt to ground RCA and investigations. | `object({...})` | `{}` | no |
 | <a name="input_availability_zones"></a> [availability_zones](#input\_availability_zones) | List of Availability Zones. Defaults to <region>a, <region>b, <region>c when empty. | `list(string)` | `[]` | no |
@@ -205,6 +202,7 @@ For production environments, we recommend hosting the container image inside you
 | <a name="input_ecs_container_insights"></a> [ecs_container_insights](#input\_ecs_container_insights) | ECS Container Insights mode (enhanced, enabled, or disabled) | `string` | `"enhanced"` | no |
 | <a name="input_ecs_instance_min_memory_mib"></a> [ecs_instance_min_memory_mib](#input\_ecs_instance_min_memory_mib) | Minimum memory (in MiB) for ECS Managed Instances selection | `number` | `128` | no |
 | <a name="input_ecs_instance_min_vcpu"></a> [ecs_instance_min_vcpu](#input\_ecs_instance_min_vcpu) | Minimum vCPU count for ECS Managed Instances selection | `number` | `1` | no |
+| <a name="input_enable_aws_readonly_access"></a> [enable_aws_readonly_access](#input\_enable_aws_readonly_access) | Opt-in: Attach the broad AWS managed ReadOnlyAccess policy to the bot task role in addition to the default least-privilege observability policy (disabled by default to prevent reading application data such as S3 objects or DynamoDB items) | `bool` | `false` | no |
 | <a name="input_enable_bedrock_endpoint"></a> [enable_bedrock_endpoint](#input\_enable_bedrock_endpoint) | Enable AWS Bedrock Runtime Interface VPC Endpoint (used when cluster_arn is empty) | `bool` | `true` | no |
 | <a name="input_enable_datadog"></a> [enable_datadog](#input\_enable_datadog) | Enable Datadog integration (Monitors, Logs, APM, Events via MCP / OTLP) | `bool` | `false` | no |
 | <a name="input_enable_github"></a> [enable_github](#input\_enable_github) | Enable GitHub integration (Pull Requests, Actions, Commits) | `bool` | `false` | no |

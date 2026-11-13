@@ -187,6 +187,96 @@ def test_aws_ecs_rds_cloudtrail_tools_mocked(monkeypatch):
     assert "ci-deployer" in ct_out
 
 
+def test_aws_lambda_get_function_uses_configuration_only(monkeypatch):
+    import boto3
+    from app.integrations.aws import aws_lambda_get_function
+
+    class FakeLambdaClient:
+        def get_function_configuration(self, FunctionName):
+            return {
+                "FunctionName": FunctionName,
+                "Runtime": "python3.12",
+                "MemorySize": 256,
+                "Timeout": 30,
+                "LastModified": "2026-11-13T18:00:00.000+0000",
+                "Environment": {"Variables": {"ENVIRONMENT": "preprod", "LOG_LEVEL": "INFO"}},
+            }
+
+        def get_function(self, FunctionName):
+            raise AssertionError("get_function (code access) must not be called; use get_function_configuration")
+
+    monkeypatch.setattr(boto3, "client", lambda service_name, **kwargs: FakeLambdaClient())
+
+    out = aws_lambda_get_function.invoke({"function_name": "serenity-api"})
+    assert "serenity-api" in out
+    assert "python3.12" in out
+    assert "256 MB" in out
+    assert "ENVIRONMENT, LOG_LEVEL" in out
+
+
+def test_truncate_log_lines_preserves_head_tail_and_error_context():
+    from app.integrations.aws import _truncate_log_lines
+
+    lines = [f"[1000] INFO startup step {i}" for i in range(5)]
+    lines += [f"[1001] INFO noisy heartbeat {'x' * 80} #{i}" for i in range(60)]
+    lines += [
+        "[1002] INFO preparing DB query",
+        "[1003] ERROR failed to execute query",
+        "Traceback (most recent call last):",
+        '  File "db.py", line 42, in run',
+        '    raise TimeoutError("RDS connection timed out")',
+        "TimeoutError: RDS connection timed out",
+    ]
+    lines += [f"[1004] INFO trailing noise {'y' * 80} #{i}" for i in range(60)]
+    lines += [
+        "[1005] CRITICAL worker exiting",
+        "[1006] final-stacktrace-marker: fatal crash",
+    ]
+
+    truncated = _truncate_log_lines(lines, max_chars=2500)
+
+    assert len(truncated) <= 2500
+    assert "INFO startup step 0" in truncated
+    assert "ERROR failed to execute query" in truncated
+    assert "Traceback (most recent call last):" in truncated
+    assert "TimeoutError: RDS connection timed out" in truncated
+    assert "final-stacktrace-marker: fatal crash" in truncated
+    assert "log line(s) omitted" in truncated
+
+
+def test_aws_cloudwatch_get_log_events_smart_truncation(monkeypatch):
+    import boto3
+    from app.integrations.aws import MAX_PAYLOAD_SIZE, aws_cloudwatch_get_log_events
+
+    big_events = [
+        {"timestamp": 1700000000000, "message": "INFO boot-sequence-start"},
+    ]
+    for i in range(150):
+        big_events.append({"timestamp": 1700000001000 + i, "message": f"INFO padding {'a' * 250} #{i}"})
+    big_events.append(
+        {
+            "timestamp": 1700000005000,
+            "message": "ERROR unhandled failure\nTraceback (most recent call last):\n  File 'main.py', line 9\nValueError: bad-payload-token",
+        }
+    )
+    for i in range(150):
+        big_events.append({"timestamp": 1700000006000 + i, "message": f"INFO post-error {'b' * 250} #{i}"})
+    big_events.append({"timestamp": 1700000099999, "message": "CRITICAL tail-root-cause-end"})
+
+    class FakeLogsClient:
+        def filter_log_events(self, **kwargs):
+            return {"events": big_events}
+
+    monkeypatch.setattr(boto3, "client", lambda service_name, **kwargs: FakeLogsClient())
+
+    out = aws_cloudwatch_get_log_events.invoke({"log_group_name": "/aws/ecs/prod-api", "limit": 50})
+    assert len(out) <= MAX_PAYLOAD_SIZE
+    assert "boot-sequence-start" in out
+    assert "ValueError: bad-payload-token" in out
+    assert "CRITICAL tail-root-cause-end" in out
+    assert "log line(s) omitted" in out
+
+
 def test_alert_detector_ignore_recovery():
     recovery_event = {
         "subtype": "bot_message",
