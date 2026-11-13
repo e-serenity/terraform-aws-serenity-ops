@@ -12,25 +12,6 @@ resource "aws_ecs_cluster" "this" {
   })
 }
 
-resource "aws_ecs_cluster_capacity_providers" "this" {
-  count        = local.create_ecs_cluster ? 1 : 0
-  cluster_name = aws_ecs_cluster.this[0].name
-
-  capacity_providers = [
-    aws_ecs_capacity_provider.managed_instances[0].name
-  ]
-
-  default_capacity_provider_strategy {
-    capacity_provider = aws_ecs_capacity_provider.managed_instances[0].name
-    base              = 1
-    weight            = 100
-  }
-
-  depends_on = [
-    aws_ecs_capacity_provider.managed_instances
-  ]
-}
-
 resource "aws_ecs_capacity_provider" "managed_instances" {
   count   = local.create_ecs_cluster ? 1 : 0
   name    = local.ecs_capacity_provider_name

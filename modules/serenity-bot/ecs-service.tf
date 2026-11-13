@@ -26,7 +26,7 @@ module "ecs_service" {
   version = "6.10.0"
 
   depends_on = [
-    aws_ecs_cluster_capacity_providers.this
+    aws_ecs_capacity_provider.managed_instances
   ]
 
   name           = "${var.environment}-${var.application}"

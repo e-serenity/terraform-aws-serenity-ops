@@ -84,6 +84,8 @@ resource "aws_cloudwatch_log_metric_filter" "bot_error_logs" {
     value         = "1"
     default_value = "0"
   }
+
+  depends_on = [module.ecs_service]
 }
 
 resource "aws_cloudwatch_metric_alarm" "bot_error_logs" {
@@ -241,7 +243,6 @@ resource "aws_lambda_function" "slack_notifier" {
     variables = {
       SECRETS_ARN   = local.secret_arn
       SLACK_CHANNEL = var.platform_alert_slack_channel
-      AWS_REGION    = var.region
     }
   }
 
