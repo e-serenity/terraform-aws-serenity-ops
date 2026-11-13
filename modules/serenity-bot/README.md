@@ -1,23 +1,19 @@
-<div align="center">
-
 # 🤖 Serenity-Bot (`modules/serenity-bot`)
 
 **Autonomous RCA & Human-in-the-Loop AI Orchestrator for AWS, Powered by Bedrock & Slack Socket Mode.**
 
 [![Terraform Module](https://img.shields.io/badge/Terraform_Registry-e--serenity%2Fserenity--ops%2Faws%2F%2Fmodules%2Fserenity--bot-7B42BC?style=flat-square&logo=terraform&logoColor=white)](https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-bot)
 [![AWS Bedrock](https://img.shields.io/badge/AI-AWS_Bedrock_(Claude_Sonnet)-FF9900?style=flat-square&logo=amazon-web-services&logoColor=white)](https://aws.amazon.com/bedrock/)
-[![Zero Inbound Ports](https://img.shields.io/badge/Network-Slack_Socket_Mode_(0_Inbound_Ports)-10B981?style=flat-square)](ecs-service.tf)
+[![Zero Inbound Ports](https://img.shields.io/badge/Network-Slack_Socket_Mode_(0_Inbound_Ports)-10B981?style=flat-square)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/modules/serenity-bot/ecs-service.tf)
 [![Standalone or Hub](https://img.shields.io/badge/Mode-Self--Contained_VPC_&_ECS_%7C_BYO_ECS_Cluster-3B82F6?style=flat-square)](#deployment-modes)
 
 [Key Capabilities](#key-capabilities) · [Security Model (2 Modes)](#security--iam-permission-model) · [Deployment Modes](#deployment-modes) · [Container Image: Default `:stable` vs Private AWS ECR](#container-image-default-stable-vs-private-aws-ecr-recommended-for-production) · [Inputs](#inputs) · [Outputs](#outputs)
 
-<code>source = "e-serenity/serenity-ops/aws//modules/serenity-bot"</code>
-
-</div>
+`source = "e-serenity/serenity-ops/aws//modules/serenity-bot"`
 
 ## Key Capabilities
 
-**Serenity-Bot** is the AI CloudSecOps & AIOps orchestrator of the **[Serenity-Ops](../..)** suite. It runs as a private container on **AWS ECS (ARM64)** with no inbound ports exposed to the internet via **Slack Socket Mode**, and communicates privately with **AWS Bedrock**.
+**Serenity-Bot** is the AI CloudSecOps & AIOps orchestrator of the **[Serenity-Ops](https://github.com/e-serenity/terraform-aws-serenity-ops)** suite. It runs as a private container on **AWS ECS (ARM64)** with no inbound ports exposed to the internet via **Slack Socket Mode**, and communicates privately with **AWS Bedrock**.
 
 1. **Real-Time Alert Analysis (RCA):** Listens to your Slack alert channels (where invited) or EventBridge, correlates signals across AWS services (`CloudWatch Alarms/Metrics/Logs`, `ECS`, `RDS`, `CloudTrail`, `DynamoDB`, `Lambda`, plus custom MCP servers) as well as your opt-in integrations (`GitHub`, `GitLab`, `Datadog`, `Grafana`) and your Terraform `application_context` map, and posts an actionable Root Cause Analysis in-thread.
 2. **Web & Slack Chatbot:** Answers infrastructure, log, and deployment questions in real time (*"Which alarms are currently firing?"*, *"Which GitLab commit caused the RDS latency spike?"*) via Slack or inside the `serenity-ops` Web Console.
@@ -97,7 +93,7 @@ Serenity-Bot uses a resilient multi-provider LLM architecture:
 ### 1. Primary Engine: AWS Bedrock (Anthropic Claude)
 By default, the bot communicates privately with **AWS Bedrock** via VPC Endpoints (`enable_bedrock_endpoint = true`) with zero outbound internet transit.
 
-> [!IMPORTANT]
+> **Important:**
 > **Anthropic Claude on AWS Bedrock (One-Time Use Case Form):**
 > Serverless foundation models are now automatically enabled across all AWS commercial regions upon first invocation—the legacy "Model access" page has been retired by AWS. 
 > However, for **Anthropic models**, first-time users must submit their company & use case details in the **Amazon Bedrock Console** before access is completed, as required for AWS Marketplace subscription validation.
@@ -115,7 +111,7 @@ To let you test `serenity-bot` in a single `terraform apply` without building an
 ```hcl
 image = "ghcr.io/e-serenity/serenity-bot:stable"
 ```
-> [!NOTE]
+> **Note:**
 > While convenient for evaluation and quickstarts, pulling from an external registry (`ghcr.io`) introduces an external dependency during ECS task launches or restarts.
 
 ### 2. Production Best Practice (`create_ecr_repository = true`): Self-Hosted in AWS ECR
@@ -139,7 +135,7 @@ For production environments, we recommend hosting the container image inside you
    ```bash
    terraform apply -target=module.serenity_bot.aws_ecr_repository.this
    ```
-3. **Build the `linux/arm64` image from [`modules/serenity-bot/bot`](./bot) and push it to your ECR repository:**
+3. **Build the `linux/arm64` image from [`modules/serenity-bot/bot`](https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/serenity-bot/bot) and push it to your ECR repository:**
    *(Works natively on Apple Silicon Macs, or on Linux/Windows x86_64 via `docker buildx`)*
    ```bash
    AWS_REGION="eu-west-3"

@@ -1,19 +1,15 @@
-<div align="center">
-
 # 🏛️ Serenity-Core (`modules/serenity-core`)
 
 **Serverless Core Hub, Central DynamoDB Auto-Discovery Table & Live Web Console ($0/hr Idle Cost) for Serenity-Ops.**
 
-[![Terraform](https://img.shields.io/badge/Terraform-%3E%3D_1.10-7B42BC?style=flat-square&logo=terraform&logoColor=white)](../../README.md)
+[![Terraform](https://img.shields.io/badge/Terraform-%3E%3D_1.10-7B42BC?style=flat-square&logo=terraform&logoColor=white)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/README.md)
 [![AWS](https://img.shields.io/badge/AWS-DynamoDB_%7C_CloudFront_OAC_%7C_Lambda_ARM64-FF9900?style=flat-square&logo=amazon-web-services&logoColor=white)](https://aws.amazon.com/)
 
-<code>source = "e-serenity/serenity-ops/aws//modules/serenity-core"</code>
-
-</div>
+`source = "e-serenity/serenity-ops/aws//modules/serenity-core"`
 
 ## Overview
 
-`serenity-core` provisions the serverless core resources of the **[Serenity-Ops](../../README.md)** platform (no VPC, NAT Gateway, or ECS cluster required):
+`serenity-core` provisions the serverless core resources of the **[Serenity-Ops](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/README.md)** platform (no VPC, NAT Gateway, or ECS cluster required):
 
 - **Central DynamoDB Hub (`dynamodb.tf`):** Single-Table Design (`serenity-ops-hub`) with `PAY_PER_REQUEST` billing and native **AWS DynamoDB TTL** enabled (`ttl` attribute) for automatic history expiration without cron jobs.
 - **Serverless Live Web Console (`frontend.tf`, `api.tf`, `front/`, `lambda/api/`):** Private S3 bucket, CloudFront Origin Access Control (OAC), `$0/mo` Edge IPv4/IPv6 CIDR filtering (`dashboard_allowed_ips`), and ARM64 Python 3.12 Live API Lambda (`/api/state` & `/api/chat`).

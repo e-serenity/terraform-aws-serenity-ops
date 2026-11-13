@@ -1,5 +1,3 @@
-<div align="center">
-
 # 📧 Serenity-SES (`modules/serenity-ses`)
 
 **Automated AWS SES v2 Reputation Protection, Managed Dedicated IPs & AI-Optional Governance.**
@@ -8,15 +6,13 @@
 [![AWS SES v2](https://img.shields.io/badge/AWS-SES_v2_%7C_Lambda_ARM64_%7C_DynamoDB-FF9900?style=flat-square&logo=amazon-web-services&logoColor=white)](https://aws.amazon.com/ses/)
 [![AI-Optional](https://img.shields.io/badge/Architecture-Standalone_or_AI--Assisted-10B981?style=flat-square)](#deployment-modes)
 
-<code>source = "e-serenity/serenity-ops/aws//modules/serenity-ses"</code>
-
-</div>
+`source = "e-serenity/serenity-ops/aws//modules/serenity-ses"`
 
 ## Why `serenity-ses`?
 
 A hard **Bounce rate > 5%** or **Complaint rate > 0.1%** can cause AWS to place your SES account under probation and block your transactional emails.
 
-**`serenity-ses`** deploys a serverless AWS SES v2 reputation protection pipeline that runs either standalone or connected to the **[Serenity-Ops](../..)** platform:
+**`serenity-ses`** deploys a serverless AWS SES v2 reputation protection pipeline that runs either standalone or connected to the **[Serenity-Ops](https://github.com/e-serenity/terraform-aws-serenity-ops)** platform:
 
 - **Managed Dedicated IP Pool (`MANAGED`):** Provisions and warms up your dedicated AWS SES v2 IPs with a pre-wired Configuration Set.
 - **Real-Time Feedback Pipeline (`SNS -> SQS -> ARM64 Lambda`):** Captures `Bounce`, `Complaint`, and `DeliveryDelay` events, archives them in DynamoDB with native TTL, and tracks your sender reputation.

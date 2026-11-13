@@ -1,5 +1,3 @@
-<div align="center">
-
 # 🛡️ Serenity-Ops
 
 **Modular, Self-Hosted CloudSecOps & AIOps Platform for AWS, Deployed via Terraform.**
@@ -8,31 +6,25 @@
 [![GitHub Repo](https://img.shields.io/badge/GitHub-e--serenity%2Fterraform--aws--serenity--ops-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/e-serenity/terraform-aws-serenity-ops)
 [![Terraform Registry](https://img.shields.io/badge/Terraform_Registry-e--serenity%2Fserenity--ops%2Faws-7B42BC?style=flat-square&logo=terraform&logoColor=white)](https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest)
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D_1.10-7B42BC?style=flat-square&logo=terraform&logoColor=white)](https://github.com/e-serenity/terraform-aws-serenity-ops)
-[![Security](https://img.shields.io/badge/Security-Zero_Inbound_Ports_%7C_Human--in--the--Loop-10B981?style=flat-square)](SECURITY.md)
+[![Security](https://img.shields.io/badge/Security-Zero_Inbound_Ports_%7C_Human--in--the--Loop-10B981?style=flat-square)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/SECURITY.md)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-e--serenity.fr-3B82F6?style=flat-square)](https://e-serenity.fr/serenity-ops/)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/LICENSE)
 
-**[🌐 Interactive Live Demo](https://e-serenity.fr/serenity-ops/) · [Usage](#usage) · [Examples](#examples) · [Architecture & Security](docs/architecture.md) · [Module Catalog & Deployment Guide](docs/deployment-guide.md) · [Documentation](#documentation--community)**
+**[🌐 Interactive Live Demo](https://e-serenity.fr/serenity-ops/) · [Usage](#usage) · [Examples](#examples) · [Architecture & Security](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/docs/architecture.md) · [Module Catalog & Deployment Guide](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/docs/deployment-guide.md) · [Documentation](#documentation--community)**
 
 [The Problem](#the-problem) · [Why Serenity-Ops?](#why-serenity-ops) · [Core Features](#core-features)
 
-<code>source = "e-serenity/serenity-ops/aws"</code> · <code>source = "e-serenity/serenity-ops/aws//modules/&lt;module&gt;"</code>
-
-<br />
+`source = "e-serenity/serenity-ops/aws"` · `source = "e-serenity/serenity-ops/aws//modules/<module>"`
 
 **💬 Slack Bot & Investigations**
 
-<img src="docs/assets/slack-preview.png" alt="Serenity-Ops Slack Incident Investigation & Human-in-the-Loop Preview" width="100%" />
-
-<br />
+![Serenity-Ops Slack Incident Investigation & Human-in-the-Loop Preview](https://raw.githubusercontent.com/e-serenity/terraform-aws-serenity-ops/main/docs/assets/slack-preview.png)
 
 **🌐 Web Console & Live Hub (Full suite)**
 
-<img src="docs/assets/dashboard-preview.png" alt="Serenity-Ops Web Console & AI Operations Center Preview" width="100%" />
+![Serenity-Ops Web Console & AI Operations Center Preview](https://raw.githubusercontent.com/e-serenity/terraform-aws-serenity-ops/main/docs/assets/dashboard-preview.png)
 
-</div>
-
-> [!TIP]
+> **Tip:**
 > **Try the Interactive Live Demo:** Explore the full web console (toggle modules on the fly, test *AI-Optional* behavior, review *Human-in-the-Loop* approvals, inspect agent IAM boundaries, and switch between `EN / FR`) at **[https://e-serenity.fr/serenity-ops/](https://e-serenity.fr/serenity-ops/)**.
 
 ## The Problem
@@ -91,7 +83,7 @@ module "serenity_ops" {
 }
 ```
 
-Or deploy any module standalone via submodule syntax (`source = "e-serenity/serenity-ops/aws//modules/serenity-bot"`). See [`docs/deployment-guide.md`](docs/deployment-guide.md) for all patterns.
+Or deploy any module standalone via submodule syntax (`source = "e-serenity/serenity-ops/aws//modules/serenity-bot"`). See [`docs/deployment-guide.md`](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/docs/deployment-guide.md) for all patterns.
 
 ### Prerequisites
 
@@ -100,7 +92,7 @@ Or deploy any module standalone via submodule syntax (`source = "e-serenity/sere
 | **Terraform** | `>= 1.10` |
 | **AWS credentials** | IAM permissions to provision VPC, ECS, IAM, DynamoDB, S3, CloudFront, Lambda, and Secrets Manager resources. |
 | **Amazon Bedrock access** | Anthropic Claude models enabled in your target AWS region (one-time use-case form in the Bedrock console for first-time accounts). |
-| **Slack workspace** | Slack app configured with **Socket Mode** (`SLACK_BOT_TOKEN` & `SLACK_APP_TOKEN`). See [`docs/slack-app.md`](docs/slack-app.md). |
+| **Slack workspace** | Slack app configured with **Socket Mode** (`SLACK_BOT_TOKEN` & `SLACK_APP_TOKEN`). See [`docs/slack-app.md`](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/docs/slack-app.md). |
 
 **Optional**
 
@@ -109,10 +101,10 @@ Or deploy any module standalone via submodule syntax (`source = "e-serenity/sere
 
 ## Examples
 
-Runnable reference configurations are included under [`examples/`](examples):
+Runnable reference configurations are included under [`examples/`](https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/examples):
 
-- **[`examples/bot`](examples/bot)** — Standalone `serenity-bot` deployment (Slack Socket Mode + AWS Bedrock RCA + self-contained VPC/ECS).
-- **[`examples/full`](examples/full)** — Complete suite via the root module (`serenity-core` Hub & CloudFront Web Console + `serenity-bot` + `serenity-ses`).
+- **[`examples/bot`](https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/examples/bot)** — Standalone `serenity-bot` deployment (Slack Socket Mode + AWS Bedrock RCA + self-contained VPC/ECS).
+- **[`examples/full`](https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/examples/full)** — Complete suite via the root module (`serenity-core` Hub & CloudFront Web Console + `serenity-bot` + `serenity-ses`).
 
 ```bash
 cd examples/full
@@ -120,18 +112,18 @@ terraform init
 terraform apply
 ```
 
-After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`) in the created AWS Secrets Manager secret (`bot_secrets_manager_secret_arn` output) — or pass `bot_create_secrets = false` with `bot_existing_secret_arn` — and follow **[`docs/slack-app.md`](docs/slack-app.md)** to invite the bot to your alert channels.
+After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`) in the created AWS Secrets Manager secret (`bot_secrets_manager_secret_arn` output) — or pass `bot_create_secrets = false` with `bot_existing_secret_arn` — and follow **[`docs/slack-app.md`](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/docs/slack-app.md)** to invite the bot to your alert channels.
 
 ## Documentation & Community
 
-- **[Architecture, Security & Cost Design (`docs/architecture.md`)](docs/architecture.md):** Global architecture diagram, repository structure, IAM 3-layer security model, network/FinOps modes, and LLM Bedrock/Fallback strategy.
-- **[Modular Ecosystem & Deployment Guide (`docs/deployment-guide.md`)](docs/deployment-guide.md):** Module catalog (Standalone vs Hub-Coupled) and copy-paste Terraform patterns (Full Suite, Standalone Bot, Standalone SES).
-- **[`modules/serenity-core` Documentation](modules/serenity-core/README.md):** Serverless Core Hub (DynamoDB Hub, CloudFront OAC Web Console, Edge IP Filter & Live API Lambda).
-- **[`modules/serenity-bot` Documentation](modules/serenity-bot/README.md):** AI Orchestrator setup, Bedrock IAM permissions, and opt-in connectors.
-- **[`modules/serenity-ses` Documentation](modules/serenity-ses/README.md):** AWS SES v2 Dedicated IP Pool, Bounce/Complaint stream, and `serenity-agent-ses`.
-- **[Slack App Manifest & Setup (`docs/slack-app.md`)](docs/slack-app.md):** Ready-to-paste Slack Socket Mode YAML manifest and required OAuth scopes.
-- **[Security Policy & Threat Model (`SECURITY.md`)](SECURITY.md):** Defense-in-depth architecture and vulnerability disclosure.
-- **[Contributing Guide (`CONTRIBUTING.md`)](CONTRIBUTING.md):** Local frontend simulator, Python tests, and Terraform standards.
+- **[Architecture, Security & Cost Design (`docs/architecture.md`)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/docs/architecture.md):** Global architecture diagram, repository structure, IAM 3-layer security model, network/FinOps modes, and LLM Bedrock/Fallback strategy.
+- **[Modular Ecosystem & Deployment Guide (`docs/deployment-guide.md`)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/docs/deployment-guide.md):** Module catalog (Standalone vs Hub-Coupled) and copy-paste Terraform patterns (Full Suite, Standalone Bot, Standalone SES).
+- **[`modules/serenity-core` Documentation](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/modules/serenity-core/README.md):** Serverless Core Hub (DynamoDB Hub, CloudFront OAC Web Console, Edge IP Filter & Live API Lambda).
+- **[`modules/serenity-bot` Documentation](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/modules/serenity-bot/README.md):** AI Orchestrator setup, Bedrock IAM permissions, and opt-in connectors.
+- **[`modules/serenity-ses` Documentation](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/modules/serenity-ses/README.md):** AWS SES v2 Dedicated IP Pool, Bounce/Complaint stream, and `serenity-agent-ses`.
+- **[Slack App Manifest & Setup (`docs/slack-app.md`)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/docs/slack-app.md):** Ready-to-paste Slack Socket Mode YAML manifest and required OAuth scopes.
+- **[Security Policy & Threat Model (`SECURITY.md`)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/SECURITY.md):** Defense-in-depth architecture and vulnerability disclosure.
+- **[Contributing Guide (`CONTRIBUTING.md`)](https://github.com/e-serenity/terraform-aws-serenity-ops/blob/main/CONTRIBUTING.md):** Local frontend simulator, Python tests, and Terraform standards.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -263,6 +255,6 @@ After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_A
 | <a name="output_ses_sqs_queue_arn"></a> [ses_sqs_queue_arn](#output\_ses_sqs_queue_arn) | ARN of the SQS queue buffering SES sending reports |
 <!-- END_TF_DOCS -->
 
-<div align="center">
-  <sub>Built and maintained by <strong><a href="https://e-serenity.fr">e-serenity</a></strong> · Self-Hosted CloudSecOps & AIOps for AWS</sub>
-</div>
+---
+
+*Built and maintained by **[e-serenity](https://e-serenity.fr)** · Self-Hosted CloudSecOps & AIOps for AWS*
