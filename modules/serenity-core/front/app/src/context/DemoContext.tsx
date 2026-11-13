@@ -138,7 +138,7 @@ export const getAgentsList = (lang: Language): AgentInfo[] => [
     privilege: 'READ (AUTO) + WRITE ON APPROVAL',
     targetModule: 'serenity-bot',
     tools: [
-      'AWS Read-Only Observability (CloudWatch Alarms/Metrics/Logs, ECS, RDS, CloudTrail, DynamoDB, Lambda)',
+      'AWS Observability Read-Only (CloudWatch, Logs, ECS, RDS, CloudTrail, DynamoDB/Lambda metadata — no app data)',
       'Intégrations Terraform (GitLab, GitHub, Datadog, Grafana, MCP...)',
       'Slack Socket Mode (#ops-alerts, #prod-incidents)',
       'Circuit HITL : Approbation Slack / Web → sts:AssumeRole scopé',

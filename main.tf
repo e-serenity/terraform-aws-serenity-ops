@@ -81,13 +81,15 @@ module "serenity_bot" {
   enable_grafana           = var.enable_grafana
   history_retention_days   = var.history_retention_days
 
-  llm_primary_provider  = var.llm_primary_provider
-  llm_primary_model     = var.llm_primary_model
-  llm_fallback_provider = var.llm_fallback_provider
-  llm_fallback_model    = var.llm_fallback_model
-  max_token_budget      = var.max_token_budget
-  max_tool_iterations   = var.max_tool_iterations
-  enable_pii_redaction  = var.enable_pii_redaction
+  llm_primary_provider         = var.llm_primary_provider
+  llm_primary_model            = var.llm_primary_model
+  llm_fallback_provider        = var.llm_fallback_provider
+  llm_fallback_model           = var.llm_fallback_model
+  max_token_budget             = var.max_token_budget
+  max_tool_iterations          = var.max_tool_iterations
+  enable_pii_redaction         = var.enable_pii_redaction
+  enable_aws_readonly_access   = var.bot_enable_aws_readonly_access
+  additional_task_iam_policies = var.bot_additional_task_iam_policies
 
   enable_platform_alarms              = var.enable_platform_alarms
   platform_alert_slack_channel        = var.platform_alert_slack_channel

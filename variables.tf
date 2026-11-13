@@ -383,6 +383,18 @@ variable "enable_pii_redaction" {
   default     = true
 }
 
+variable "bot_enable_aws_readonly_access" {
+  description = "Opt-in: Attach the broad AWS managed ReadOnlyAccess policy to the Serenity-Bot task role in addition to the default least-privilege observability policy"
+  type        = bool
+  default     = false
+}
+
+variable "bot_additional_task_iam_policies" {
+  description = "Optional map of additional IAM policy ARNs (e.g., { CustomMCPRead = \"arn:aws:iam::...\" }) to attach to the Serenity-Bot ECS task role"
+  type        = map(string)
+  default     = {}
+}
+
 variable "enable_platform_alarms" {
   description = "When true, provisions a predefined suite of CloudWatch alarms to monitor the Serenity-Ops platform itself (ECS CPU/Memory, Bot Error Logs, and DynamoDB Hub errors)"
   type        = bool

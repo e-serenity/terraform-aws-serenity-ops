@@ -199,8 +199,7 @@ def aws_lambda_get_function(function_name: str) -> str:
     Use this tool when investigating serverless backend errors or latency timeouts.
     """
     client = boto3.client("lambda", region_name=settings.aws_region)
-    resp = client.get_function(FunctionName=function_name)
-    cfg = resp.get("Configuration", {})
+    cfg = client.get_function_configuration(FunctionName=function_name)
     if not cfg:
         return f"Lambda function `{function_name}` not found."
 

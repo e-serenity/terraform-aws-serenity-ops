@@ -18,7 +18,7 @@
 - **Origin Secret Header Verification:** CloudFront injects a random 32-character `x-serenity-origin-secret` header into requests forwarded to `/api/*`. The Live API Lambda rejects direct invocations missing this header with `HTTP 403 Forbidden`.
 
 ### 4. 3-Layer AI IAM Governance & Human-in-the-Loop
-1. **Mode 1: Autonomous Read (`READ AUTO`):** The base `serenity-bot` orchestrator only holds read-only permissions to investigate alerts, correlate logs/commits, and answer operator questions.
+1. **Mode 1: Autonomous Observability Read (`READ AUTO`):** By default, the base `serenity-bot` task role is scoped to a least-privilege observability IAM policy (`cloudwatch:Describe*/GetMetric*`, `logs:FilterLogEvents/Get*/Describe*`, `ecs:Describe*/List*`, `rds:Describe*`, `cloudtrail:LookupEvents`, `dynamodb:DescribeTable/ListTables`, `lambda:GetFunctionConfiguration/ListFunctions`). It cannot read application payloads (`s3:GetObject`, `dynamodb:GetItem/Scan` on application tables, `secretsmanager:GetSecretValue`, or Lambda code bundles) unless explicitly opted in via `enable_aws_readonly_access` or `additional_task_iam_policies`.
 2. **Mode 2: Mandatory Human Approval (`WRITE ON APPROVAL`):** Any write operation proposed by the AI generates a `PENDING` approval card in both Slack and the Web Console. No mutation runs until an operator clicks **Approve**.
 3. **Mode 3: Tag-Scoped Domain Sub-Agents (`sts:AssumeRole`):** Write permissions are isolated in dedicated per-module IAM roles (`serenity-agent-cw`, `serenity-agent-ses`). Destructive or mutating actions on existing resources are restricted by AWS IAM policy conditions requiring the tag `ManagedBy = serenity-ops`:
    ```json

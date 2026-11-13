@@ -28,7 +28,7 @@
 
 | Operating Mode | Permission Scope | Human Approval | Primary Use Cases |
 | :--- | :--- | :---: | :--- |
-| **Mode 1: Global Read (`READ AUTO`)** | Cross-service AWS read access (`ReadOnlyAccess`) + opt-in Terraform connectors (`GitLab`, `Datadog`...) | ❌ Not required (autonomous) | Automated Alert RCA (`CloudWatch`, `ECS`, `RDS`, `CloudTrail`, `DynamoDB`, `Lambda`), log/commit correlation, and Chatbot queries. |
+| **Mode 1: Scoped Observability Read (`READ AUTO`)** | Least-privilege AWS observability policy (`cloudwatch:Describe*/GetMetric*`, `logs:FilterLogEvents/Get*/Describe*`, `ecs:Describe*/List*`, `rds:Describe*`, `cloudtrail:LookupEvents`, `dynamodb:DescribeTable/ListTables`, `lambda:GetFunctionConfiguration/ListFunctions` — no application payload reads; opt-in `enable_aws_readonly_access` / `additional_task_iam_policies`) + opt-in Terraform connectors (`GitLab`, `Datadog`...) | ❌ Not required (autonomous) | Automated Alert RCA (`CloudWatch`, `ECS`, `RDS`, `CloudTrail`, `DynamoDB`, `Lambda`), log/commit correlation, and Chatbot queries. |
 | **Mode 2: Controlled Write (`WRITE ON APPROVAL`)** | `sts:AssumeRole` delegation to tag-scoped sub-agents (`ManagedBy=serenity-ops`) | ✅ **Mandatory** (`Approve` / `Reject` via Slack or Web) | Quarantining SES bounced addresses (`serenity-agent-ses`), creating tagged CloudWatch alarms (`serenity-agent-cw`) *(ECS service rollbacks on roadmap)*. |
 
 ## Deployment Modes
@@ -188,6 +188,7 @@ For production environments, we recommend hosting the container image inside you
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_additional_task_iam_policies"></a> [additional\_task\_iam\_policies](#input\_additional\_task\_iam\_policies) | Optional map of additional IAM policy ARNs (e.g., { CustomMCPRead = "arn:aws:iam::..." }) to attach to the Serenity-Bot ECS task role | `map(string)` | `{}` | no |
 | <a name="input_application"></a> [application](#input\_application) | Application and ECS service name (e.g., serenity-bot) | `string` | `"serenity-bot"` | no |
 | <a name="input_application_context"></a> [application_context](#input\_application_context) | Custom business and technical context about your workloads (services, tech stacks, repositories, log groups, criticality, runbooks). Injected into the AI prompt to ground RCA and investigations. | `object({...})` | `{}` | no |
 | <a name="input_availability_zones"></a> [availability_zones](#input\_availability_zones) | List of Availability Zones. Defaults to <region>a, <region>b, <region>c when empty. | `list(string)` | `[]` | no |
@@ -205,6 +206,7 @@ For production environments, we recommend hosting the container image inside you
 | <a name="input_ecs_container_insights"></a> [ecs_container_insights](#input\_ecs_container_insights) | ECS Container Insights mode (enhanced, enabled, or disabled) | `string` | `"enhanced"` | no |
 | <a name="input_ecs_instance_min_memory_mib"></a> [ecs_instance_min_memory_mib](#input\_ecs_instance_min_memory_mib) | Minimum memory (in MiB) for ECS Managed Instances selection | `number` | `128` | no |
 | <a name="input_ecs_instance_min_vcpu"></a> [ecs_instance_min_vcpu](#input\_ecs_instance_min_vcpu) | Minimum vCPU count for ECS Managed Instances selection | `number` | `1` | no |
+| <a name="input_enable_aws_readonly_access"></a> [enable_aws_readonly_access](#input\_enable_aws_readonly_access) | Opt-in: Attach the broad AWS managed ReadOnlyAccess policy to the bot task role in addition to the default least-privilege observability policy (disabled by default to prevent reading application data such as S3 objects or DynamoDB items) | `bool` | `false` | no |
 | <a name="input_enable_bedrock_endpoint"></a> [enable_bedrock_endpoint](#input\_enable_bedrock_endpoint) | Enable AWS Bedrock Runtime Interface VPC Endpoint (used when cluster_arn is empty) | `bool` | `true` | no |
 | <a name="input_enable_datadog"></a> [enable_datadog](#input\_enable_datadog) | Enable Datadog integration (Monitors, Logs, APM, Events via MCP / OTLP) | `bool` | `false` | no |
 | <a name="input_enable_github"></a> [enable_github](#input\_enable_github) | Enable GitHub integration (Pull Requests, Actions, Commits) | `bool` | `false` | no |

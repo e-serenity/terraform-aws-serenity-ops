@@ -71,7 +71,7 @@ terraform-aws-serenity-ops/
 │   │   └── front/                          # Bilingual (EN / FR) React 18 + TypeScript + Tailwind Web Console
 │   ├── serenity-bot/                       # Independently deployable AI Orchestrator module
 │   │   ├── vpc.tf / routing.tf / ecs-cluster.tf # Dedicated VPC, Endpoints & ARM64 ECS Cluster (or BYO-ECS)
-│   │   ├── ecs-service.tf / secrets.tf     # ECS ARM64 service, IAM ReadOnly + Bedrock + sts:AssumeRole
+│   │   ├── ecs-service.tf / secrets.tf     # ECS ARM64 service, Scoped Observability IAM + Bedrock + sts:AssumeRole
 │   │   └── bot/app/                        # Python 3.12 + LangGraph + AWS Bedrock + Slack Socket Mode agent
 │   └── serenity-ses/                       # Independently deployable AWS SES v2 Reputation module
 │       ├── main.tf / hub.tf / agent-role.tf# Dedicated IP Pool, SNS/SQS, Hub Auto-Discovery & Scoped IAM
@@ -89,7 +89,7 @@ terraform-aws-serenity-ops/
 `serenity-bot` and its domain sub-agents use a 3-layer permission model (see [`SECURITY.md`](../SECURITY.md) for the full threat model):
 
 1. **Mode 1 (`READ AUTO`):**
-   The base orchestrator uses read-only permissions (`ReadOnlyAccess` on AWS + Terraform-enabled connectors) to investigate alerts, correlate logs/commits, and answer chat queries without permission to mutate infrastructure.
+   The base orchestrator uses a least-privilege observability read-only IAM policy (`cloudwatch:Describe*/GetMetric*`, `logs:FilterLogEvents/Get*/Describe*`, `ecs:Describe*/List*`, `rds:Describe*`, `cloudtrail:LookupEvents`, `dynamodb:DescribeTable/ListTables`, `lambda:GetFunctionConfiguration/ListFunctions` — excluding `s3:GetObject` and application DynamoDB item reads unless explicitly opted in via `enable_aws_readonly_access`) alongside Terraform-enabled connectors to investigate alerts, correlate logs/commits, and answer chat queries without permission to mutate infrastructure.
 2. **Mode 2 (`WRITE ON APPROVAL`):**
    When a remediation or resource creation is proposed, the action enters a `PENDING` state and displays the exact payload in Slack and the Web Console. Execution only happens after an operator clicks **Approve**.
 3. **Tag-Scoped IAM Write Boundaries (`ManagedBy=serenity-ops`):**

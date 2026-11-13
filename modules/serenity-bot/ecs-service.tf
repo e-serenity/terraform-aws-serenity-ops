@@ -129,14 +129,71 @@ module "ecs_service" {
 
   tasks_iam_role_policies = merge(
     {
-      ReadOnlyAccess     = "arn:aws:iam::aws:policy/ReadOnlyAccess"
-      BedrockInference   = aws_iam_policy.ecs_bedrock_inference.arn
-      STSAssumeSubagents = aws_iam_policy.sts_assume_subagents.arn
+      ObservabilityReadOnly = aws_iam_policy.observability_readonly.arn
+      BedrockInference      = aws_iam_policy.ecs_bedrock_inference.arn
+      STSAssumeSubagents    = aws_iam_policy.sts_assume_subagents.arn
     },
     local.enable_hub ? {
       DynamoDBHubAccess = aws_iam_policy.dynamodb_access[0].arn
-    } : {}
+    } : {},
+    var.enable_aws_readonly_access ? {
+      AWSManagedReadOnlyAccess = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+    } : {},
+    var.additional_task_iam_policies
   )
+}
+
+resource "aws_iam_policy" "observability_readonly" {
+  name        = "${var.application}-${var.environment}-observability-readonly-policy"
+  description = "Least-privilege AWS observability read-only permissions for Serenity-Bot (no S3 object or DynamoDB item reads)"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CloudWatchMetricsAndAlarmsRead"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:Describe*",
+          "cloudwatch:GetMetric*",
+          "cloudwatch:ListMetrics"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudWatchLogsRead"
+        Effect = "Allow"
+        Action = [
+          "logs:FilterLogEvents",
+          "logs:Get*",
+          "logs:Describe*"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECSRDSCloudTrailMetadataRead"
+        Effect = "Allow"
+        Action = [
+          "ecs:Describe*",
+          "ecs:List*",
+          "rds:Describe*",
+          "cloudtrail:LookupEvents"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "DynamoDBAndLambdaMetadataReadOnly"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:DescribeTable",
+          "dynamodb:ListTables",
+          "lambda:GetFunctionConfiguration",
+          "lambda:ListFunctions"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_policy" "ecs_bedrock_inference" {

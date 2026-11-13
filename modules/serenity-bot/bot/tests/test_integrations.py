@@ -187,6 +187,33 @@ def test_aws_ecs_rds_cloudtrail_tools_mocked(monkeypatch):
     assert "ci-deployer" in ct_out
 
 
+def test_aws_lambda_get_function_uses_configuration_only(monkeypatch):
+    import boto3
+    from app.integrations.aws import aws_lambda_get_function
+
+    class FakeLambdaClient:
+        def get_function_configuration(self, FunctionName):
+            return {
+                "FunctionName": FunctionName,
+                "Runtime": "python3.12",
+                "MemorySize": 256,
+                "Timeout": 30,
+                "LastModified": "2026-11-13T18:00:00.000+0000",
+                "Environment": {"Variables": {"ENVIRONMENT": "preprod", "LOG_LEVEL": "INFO"}},
+            }
+
+        def get_function(self, FunctionName):
+            raise AssertionError("get_function (code access) must not be called; use get_function_configuration")
+
+    monkeypatch.setattr(boto3, "client", lambda service_name, **kwargs: FakeLambdaClient())
+
+    out = aws_lambda_get_function.invoke({"function_name": "serenity-api"})
+    assert "serenity-api" in out
+    assert "python3.12" in out
+    assert "256 MB" in out
+    assert "ENVIRONMENT, LOG_LEVEL" in out
+
+
 def test_alert_detector_ignore_recovery():
     recovery_event = {
         "subtype": "bot_message",

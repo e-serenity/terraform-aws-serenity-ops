@@ -42,8 +42,8 @@ export const UpsellPage: React.FC<UpsellPageProps> = ({ module }) => {
             'ECS Managed Instances Service (ARM64), Secrets Manager, AWS observability IAM Role + Bedrock Converse API + scoped sts:AssumeRole.'
           ),
           governance: t(
-            '0 port entrant (Slack Socket Mode). Lecture autonome pour le diagnostic RCA ; écriture bloquée sans validation humaine.',
-            '0 inbound ports (Slack Socket Mode). Autonomous read for RCA diagnostics; write actions locked without human approval.'
+            '0 port entrant (Slack Socket Mode). Policy IAM d’observabilité bornée (sans lecture S3/DynamoDB applicative) ; écriture bloquée sans validation humaine.',
+            '0 inbound ports (Slack Socket Mode). Scoped observability IAM policy (no app S3/DynamoDB payload reads); write actions locked without human approval.'
           ),
         };
       case 'serenity-ses':
@@ -161,8 +161,8 @@ module "${module.id.replace('serenity-', 'serenity_')}" {
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed">
               {t(
-                'Écoute vos channels Slack d’alertes et croise les services AWS autorisés (ECS, EC2, RDS, IAM, VPC, Logs...) avec les intégrations activées en variables Terraform (Datadog, GitLab, GitHub, Grafana...).',
-                'Listens to your Slack alert channels and correlates authorized AWS services (ECS, EC2, RDS, IAM, VPC, Logs...) with integrations enabled via Terraform variables (Datadog, GitLab, GitHub, Grafana...).'
+                'Écoute vos channels Slack d’alertes et croise les APIs d’observabilité AWS (CloudWatch, Logs, ECS, RDS, CloudTrail, métadonnées DynamoDB/Lambda) avec les intégrations activées en variables Terraform (Datadog, GitLab, GitHub, Grafana...).',
+                'Listens to your Slack alert channels and correlates AWS observability APIs (CloudWatch, Logs, ECS, RDS, CloudTrail, DynamoDB/Lambda metadata) with integrations enabled via Terraform variables (Datadog, GitLab, GitHub, Grafana...).'
               )}
             </p>
           </div>
