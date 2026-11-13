@@ -178,3 +178,32 @@ def update_incident_status(
     except Exception as exc:
         logger.warning("Failed to update incident %s in DynamoDB: %s", incident_id, exc)
         return False
+
+
+def record_prerequisites_status(report: dict) -> bool:
+    """Publishes startup prerequisite check results to serenity-ops-hub (MOD#serenity-bot)."""
+    table = _get_table()
+    if not table:
+        logger.info("DynamoDB hub not configured; skipping prerequisites state persistence")
+        return False
+
+    ttl_epoch = int(datetime.now(timezone.utc).timestamp()) + (DEFAULT_RETENTION_DAYS * 86400)
+    item = {
+        "PK": "MOD#serenity-bot",
+        "SK": "STATE#PREREQUISITES",
+        "overall_status": report.get("overall_status", "UNKNOWN"),
+        "checked_at": report.get("checked_at", datetime.now(timezone.utc).isoformat()),
+        "checks": report.get("checks", []),
+        "ttl": ttl_epoch,
+    }
+    try:
+        table.put_item(Item=item)
+        logger.info(
+            "Recorded startup prerequisites status '%s' in %s",
+            item["overall_status"],
+            TABLE_NAME,
+        )
+        return True
+    except Exception as exc:
+        logger.warning("Failed to record prerequisites status in %s: %s", TABLE_NAME, exc)
+        return False
