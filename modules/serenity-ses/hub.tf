@@ -13,6 +13,10 @@ resource "aws_dynamodb_table_item" "module_registration" {
     agent_role_arn = { S = try(aws_iam_role.serenity_agent_ses[0].arn, "") }
     updated_at     = { S = timestamp() }
   })
+
+  lifecycle {
+    ignore_changes = [item]
+  }
 }
 
 resource "aws_dynamodb_table_item" "ses_state_summary" {

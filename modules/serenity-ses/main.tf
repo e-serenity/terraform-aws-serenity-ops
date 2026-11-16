@@ -38,15 +38,28 @@ resource "aws_sesv2_configuration_set_event_destination" "sending_reports" {
   }
 }
 
+resource "aws_sqs_queue" "sending_reports_dlq" {
+  name                      = "${var.name_prefix}-sending-reports-dlq"
+  message_retention_seconds = 1209600 # 14 days
+  sqs_managed_sse_enabled   = true
+  tags                      = var.tags
+}
+
 resource "aws_sqs_queue" "sending_reports" {
   name                       = "${var.name_prefix}-sending-reports"
   delay_seconds              = 5
-  max_message_size           = 2048
-  message_retention_seconds  = 7200
+  max_message_size           = 262144 # 256 KiB (SES SNS notifications with MIME headers routinely exceed 2 KiB)
+  message_retention_seconds  = 345600 # 4 days
   receive_wait_time_seconds  = 10
   visibility_timeout_seconds = 360
   sqs_managed_sse_enabled    = true
-  tags                       = var.tags
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.sending_reports_dlq.arn
+    maxReceiveCount     = 5
+  })
+
+  tags = var.tags
 }
 
 resource "aws_sqs_queue_policy" "sqs_queue_policy" {

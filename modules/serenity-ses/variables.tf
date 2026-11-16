@@ -27,6 +27,12 @@ variable "enable_serenity_agent" {
   default     = true
 }
 
+variable "agent_trusted_principal_arns" {
+  type        = list(string)
+  description = "Optional list of IAM Role ARNs allowed to assume the serenity-agent-ses role (e.g., Serenity-Bot ECS task role ARN). Defaults to the current AWS account root when empty."
+  default     = []
+}
+
 variable "enable_dedicated_ip_pool" {
   type        = bool
   description = "Whether to provision an AWS SES v2 Managed Dedicated IP Pool (disabled by default to avoid monthly AWS dedicated IP charges; set to true when dedicated IPs are required)."
