@@ -17,9 +17,18 @@ class Settings:
     health_port: int = int(os.getenv("HEALTH_PORT", "8000"))
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
-    # Slack Credentials
+    # Slack Credentials & Access Control
     slack_bot_token: str = os.getenv("SLACK_BOT_TOKEN", "")
     slack_app_token: str = os.getenv("SLACK_APP_TOKEN", "")
+    slack_allowed_channel_ids: set[str] = field(
+        default_factory=lambda: {
+            c.strip().lstrip("#") for c in os.getenv("SLACK_ALLOWED_CHANNEL_IDS", "").split(",") if c.strip()
+        }
+    )
+    slack_allowed_user_ids: set[str] = field(
+        default_factory=lambda: {u.strip() for u in os.getenv("SLACK_ALLOWED_USER_IDS", "").split(",") if u.strip()}
+    )
+    slack_allow_direct_messages: bool = _as_bool(os.getenv("SLACK_ALLOW_DIRECT_MESSAGES"), default=True)
 
     # LLM Settings (Unified Multi-Provider Routing with AWS Bedrock default & Fallback)
     claude_model: str = os.getenv("CLAUDE_MODEL", "global.anthropic.claude-sonnet-4-6")

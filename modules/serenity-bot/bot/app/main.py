@@ -46,6 +46,24 @@ def _update_slack_message(client, channel: str, message_ts: str, text: str) -> N
     )
 
 
+def _is_channel_allowed(channel_id: str | None) -> bool:
+    """Checks whether a Slack channel ID is permitted by the configured allowlist."""
+    if not settings.slack_allowed_channel_ids:
+        return True
+    if not channel_id:
+        return False
+    return channel_id in settings.slack_allowed_channel_ids
+
+
+def _is_user_allowed(user_id: str | None) -> bool:
+    """Checks whether a Slack user ID is permitted by the configured allowlist."""
+    if not settings.slack_allowed_user_ids:
+        return True
+    if not user_id:
+        return False
+    return user_id in settings.slack_allowed_user_ids
+
+
 def _execute_agent_workflow(query_text: str, channel: str, thread_ts: str, client) -> None:
     with confirmations._PENDING_LOCK:
         baseline_action_ids = set(confirmations._PENDING.keys())
@@ -133,9 +151,24 @@ def on_slack_message(event, client, ack):
 
     # Handle 1-on-1 Direct Messages (DM) from human users
     if event.get("channel_type") == "im" and not event.get("bot_id") and not event.get("subtype"):
-        logger.info("Processing 1-on-1 Direct Message from user %s in channel %s", event.get("user"), event.get("channel"))
+        user_id = event.get("user")
         channel = event["channel"]
         thread_ts = event.get("thread_ts") or event["ts"]
+
+        if not settings.slack_allow_direct_messages:
+            logger.warning("Direct Message rejected from user %s (SLACK_ALLOW_DIRECT_MESSAGES=false)", user_id)
+            return
+
+        if not _is_user_allowed(user_id):
+            logger.warning("Unauthorized Slack user %s attempted Direct Message in %s", user_id, channel)
+            client.chat_postMessage(
+                channel=channel,
+                thread_ts=thread_ts,
+                text=":lock: *Access Denied:* Your Slack user ID is not in the authorized `SLACK_ALLOWED_USER_IDS` allowlist.",
+            )
+            return
+
+        logger.info("Processing 1-on-1 Direct Message from user %s in channel %s", user_id, channel)
         user_prompt = _gather_thread_context(event, client)
 
         client.chat_postMessage(
@@ -152,12 +185,15 @@ def on_slack_message(event, client, ack):
         ).start()
         return
 
+    channel = event.get("channel")
+    if not _is_channel_allowed(channel):
+        return
+
     known_services = get_known_service_names()
     parsed_alert = parse_inbound_alert(event, known_services=known_services)
     if not parsed_alert:
         return
 
-    channel = event["channel"]
     thread_ts = event.get("thread_ts") or event["ts"]
 
     log_message(
@@ -199,9 +235,24 @@ def on_slack_message(event, client, ack):
 @slack_app.event("app_mention")
 def on_slack_mention(event, client, ack):
     ack()
-    enriched_prompt = _gather_thread_context(event, client)
-    channel = event["channel"]
+    channel = event.get("channel")
+    user_id = event.get("user")
     thread_ts = event.get("thread_ts") or event["ts"]
+
+    if not _is_channel_allowed(channel):
+        logger.warning("Ignored @mention in non-allowlisted channel %s by user %s", channel, user_id)
+        return
+
+    if not _is_user_allowed(user_id):
+        logger.warning("Unauthorized Slack user %s attempted @mention in channel %s", user_id, channel)
+        client.chat_postMessage(
+            channel=channel,
+            thread_ts=thread_ts,
+            text=":lock: *Access Denied:* Your Slack user ID is not in the authorized `SLACK_ALLOWED_USER_IDS` allowlist.",
+        )
+        return
+
+    enriched_prompt = _gather_thread_context(event, client)
 
     client.chat_postMessage(
         channel=channel,
@@ -220,9 +271,13 @@ def on_slack_mention(event, client, ack):
 @slack_app.action("serenity_confirm")
 def on_action_confirmed(ack, body, client):
     ack()
+    operator = body["user"]["id"]
+    if not _is_user_allowed(operator):
+        logger.warning("Unauthorized Slack user %s attempted to approve HITL action", operator)
+        return
+
     action_key = body["actions"][0]["value"]
     pending_record = confirmations.pop_pending(action_key)
-    operator = body["user"]["id"]
 
     if not pending_record:
         _update_slack_message(
@@ -256,9 +311,13 @@ def on_action_confirmed(ack, body, client):
 @slack_app.action("serenity_cancel")
 def on_action_cancelled(ack, body, client):
     ack()
+    operator = body["user"]["id"]
+    if not _is_user_allowed(operator):
+        logger.warning("Unauthorized Slack user %s attempted to cancel HITL action", operator)
+        return
+
     action_key = body["actions"][0]["value"]
     pending_record = confirmations.pop_pending(action_key)
-    operator = body["user"]["id"]
 
     if pending_record:
         confirmations.cancel_pending(pending_record, rejected_by=f"<@{operator}>")

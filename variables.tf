@@ -231,9 +231,9 @@ variable "enable_nat_gateway" {
 }
 
 variable "single_nat_gateway" {
-  description = "When true, provisions a single shared NAT Gateway across all AZs. When false, provisions one NAT Gateway per public subnet."
+  description = "When true (default for cost efficiency), provisions a single shared NAT Gateway across all AZs (~$32/mo instead of ~$96/mo). Set to false for multi-AZ NAT high availability."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "existing_vpc_id" {
@@ -260,9 +260,9 @@ variable "enable_s3_endpoint" {
 }
 
 variable "enable_bedrock_endpoint" {
-  description = "Enable AWS Bedrock Runtime Interface VPC Endpoint (used when cluster_arn is empty)"
+  description = "Enable AWS Bedrock Runtime Interface VPC Endpoint (~$7.20/mo per AZ, used when cluster_arn is empty). Disabled by default to minimize idle costs when NAT Gateway is enabled."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "ecs_cluster_name" {
@@ -272,9 +272,9 @@ variable "ecs_cluster_name" {
 }
 
 variable "ecs_container_insights" {
-  description = "ECS Container Insights mode (enhanced, enabled, or disabled)"
+  description = "ECS Container Insights mode (enhanced, enabled, or disabled). Defaults to 'enabled' to avoid extra per-metric Enhanced Container Insights charges."
   type        = string
-  default     = "enhanced"
+  default     = "enabled"
 }
 
 variable "ecs_allowed_instance_types" {
@@ -462,7 +462,29 @@ variable "ses_enable_agent" {
 }
 
 variable "ses_enable_dedicated_ip_pool" {
-  description = "Whether to provision an AWS SES v2 Managed Dedicated IP Pool when enable_ses = true (incurs monthly AWS dedicated IP charges)"
+  description = "Whether to provision an AWS SES v2 Managed Dedicated IP Pool when enable_ses = true (disabled by default to avoid monthly AWS dedicated IP charges; set to true when dedicated IPs are required)"
+  type        = bool
+  default     = false
+}
+
+# ------------------------------------------------------------------------------
+# Serenity-Bot (Slack Access Control — Channel & User Allowlists)
+# ------------------------------------------------------------------------------
+
+variable "slack_allowed_channel_ids" {
+  description = "Optional list of allowed Slack channel IDs (e.g., ['C0123456789']) where Serenity-Bot is permitted to respond to mentions and alerts. When non-empty, messages in other channels are ignored."
+  type        = list(string)
+  default     = []
+}
+
+variable "slack_allowed_user_ids" {
+  description = "Optional list of allowed Slack user IDs (e.g., ['U0123456789']) permitted to interact with Serenity-Bot (DMs, mentions, and HITL approvals). When non-empty, unauthorized users are rejected."
+  type        = list(string)
+  default     = []
+}
+
+variable "slack_allow_direct_messages" {
+  description = "Whether Serenity-Bot responds to 1-on-1 Direct Messages (IM). When slack_allowed_user_ids is set, only listed users can DM the bot."
   type        = bool
   default     = true
 }

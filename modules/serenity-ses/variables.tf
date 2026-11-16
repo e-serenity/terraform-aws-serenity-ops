@@ -29,6 +29,6 @@ variable "enable_serenity_agent" {
 
 variable "enable_dedicated_ip_pool" {
   type        = bool
-  description = "Whether to provision an AWS SES v2 Managed Dedicated IP Pool (incurs AWS monthly dedicated IP add-on charges). Set to false to use the free shared SES pool."
-  default     = true
+  description = "Whether to provision an AWS SES v2 Managed Dedicated IP Pool (disabled by default to avoid monthly AWS dedicated IP charges; set to true when dedicated IPs are required)."
+  default     = false
 }

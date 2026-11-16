@@ -126,6 +126,9 @@ module "ecs_service" {
         { name = "MAX_TOKEN_BUDGET", value = tostring(var.max_token_budget) },
         { name = "MAX_TOOL_ITERATIONS", value = tostring(var.max_tool_iterations) },
         { name = "ENABLE_PII_REDACTION", value = tostring(var.enable_pii_redaction) },
+        { name = "SLACK_ALLOWED_CHANNEL_IDS", value = join(",", var.slack_allowed_channel_ids) },
+        { name = "SLACK_ALLOWED_USER_IDS", value = join(",", var.slack_allowed_user_ids) },
+        { name = "SLACK_ALLOW_DIRECT_MESSAGES", value = tostring(var.slack_allow_direct_messages) },
       ]
 
       secrets = concat(local.base_secrets, local.datadog_secrets, local.gitlab_secrets, local.github_secrets)

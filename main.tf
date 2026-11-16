@@ -97,6 +97,10 @@ module "serenity_bot" {
   platform_alarms_memory_threshold    = var.platform_alarms_memory_threshold
   platform_alarms_error_log_threshold = var.platform_alarms_error_log_threshold
 
+  slack_allowed_channel_ids   = var.slack_allowed_channel_ids
+  slack_allowed_user_ids      = var.slack_allowed_user_ids
+  slack_allow_direct_messages = var.slack_allow_direct_messages
+
   application_context = var.application_context
 }
 
