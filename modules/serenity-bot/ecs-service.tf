@@ -21,6 +21,35 @@ locals {
   ] : []
 }
 
+data "aws_subnet" "ecs_service" {
+  count = local.vpc_id == null ? 1 : 0
+  id    = element(local.private_subnet_ids, 0)
+}
+
+# Managed outside module.ecs_service so the capacity provider can destroy and
+# release task ENIs on managed instances before this SG is deleted.
+resource "aws_security_group" "ecs_service" {
+  name_prefix = "${local.name_prefix}-ecs-sg-"
+  description = "Security group for ${local.name_prefix} ECS service tasks"
+  vpc_id      = local.vpc_id != null ? local.vpc_id : data.aws_subnet.ecs_service[0].vpc_id
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, {
+    Name = "${local.name_prefix}-ecs-sg"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 module "ecs_service" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "6.10.0"
@@ -61,13 +90,8 @@ module "ecs_service" {
 
   subnet_ids = local.private_subnet_ids
 
-  security_group_name = "${var.application}-${var.environment}-ecs-sg"
-  security_group_egress_rules = {
-    all = {
-      ip_protocol = "-1"
-      cidr_ipv4   = "0.0.0.0/0"
-    }
-  }
+  create_security_group = false
+  security_group_ids    = [aws_security_group.ecs_service.id]
 
   container_definitions = {
     (var.application) = {

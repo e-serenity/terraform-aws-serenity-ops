@@ -51,6 +51,14 @@ resource "aws_ecs_capacity_provider" "managed_instances" {
     aws_iam_role_policy_attachment.ecs_infra_managed,
     aws_iam_role_policy_attachment.ecs_infra_pass_role,
     aws_iam_role_policy_attachment.ecs_instance_agent,
+    aws_iam_role_policy_attachment.ecs_instance_ssm,
+    aws_iam_role_policy_attachment.ecs_instance_cloudwatch,
+    aws_nat_gateway.this,
+    aws_route.private_nat_gateway,
+    aws_route_table_association.private,
+    aws_vpc_endpoint.s3,
+    aws_vpc_endpoint.bedrock_runtime,
+    aws_security_group.ecs_service,
   ]
 }
 
