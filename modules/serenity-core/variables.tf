@@ -57,3 +57,9 @@ variable "dashboard_price_class" {
   type        = string
   default     = "PriceClass_100"
 }
+
+variable "dashboard_s3_force_destroy" {
+  description = "Whether to allow force-destroying the S3 bucket hosting the Web Dashboard even when non-empty (defaults to false for production safety)"
+  type        = bool
+  default     = false
+}

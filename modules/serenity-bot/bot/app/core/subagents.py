@@ -78,7 +78,9 @@ def create_ses_tools(agent_role_arn: str) -> list[Any]:
             target=email,
             details=f"Block address {email} on SES",
             callback=execute_suppression,
-            incident_id=incident_id
+            incident_id=incident_id,
+            role_arn=agent_role_arn,
+            action_params={"email": email, "reason": reason},
         )
 
         return (
@@ -143,7 +145,18 @@ def create_cloudwatch_tools(agent_role_arn: str) -> list[Any]:
             target=alarm_name,
             details=f"Create alarm {alarm_name}",
             callback=execute_alarm_creation,
-            incident_id=incident_id
+            incident_id=incident_id,
+            role_arn=agent_role_arn,
+            action_params={
+                "alarm_name": alarm_name,
+                "metric_name": metric_name,
+                "namespace": namespace,
+                "threshold": str(threshold),
+                "comparison_operator": comparison_operator,
+                "evaluation_periods": evaluation_periods,
+                "period_seconds": period_seconds,
+                "statistic": statistic,
+            },
         )
 
         return (
@@ -180,3 +193,54 @@ def get_dynamic_tools() -> tuple[list[Any], list[str]]:
             )
 
     return tools, agent_descriptions
+
+
+def rebuild_persisted_callback(record: dict[str, Any]):
+    """Reconstructs the execution callback for a pending action loaded from DynamoDB after a restart."""
+    role_arn = record.get("role_arn", "")
+    action_name = record.get("action", "")
+    params = record.get("action_params") or {}
+    if not role_arn:
+        return None
+
+    if action_name == "put_suppressed_destination":
+        email = params.get("email") or record.get("target")
+        reason = params.get("reason", "BOUNCE")
+
+        def _exec_ses() -> str:
+            session = assume_subagent_role(role_arn, "ses-suppression")
+            ses_client = session.client("sesv2", region_name=AWS_REGION)
+            ses_client.put_suppressed_destination(EmailAddress=email, Reason=reason)
+            return f"Address '{email}' was successfully added to the SES suppression list (Reason: {reason})."
+
+        return _exec_ses
+
+    if action_name == "put_metric_alarm":
+        alarm_name = params.get("alarm_name") or record.get("target")
+        metric_name = params.get("metric_name", "CPUUtilization")
+        namespace = params.get("namespace", "AWS/ECS")
+        threshold = float(params.get("threshold", 85.0))
+        comparison_operator = params.get("comparison_operator", "GreaterThanOrEqualToThreshold")
+        evaluation_periods = int(params.get("evaluation_periods", 1))
+        period_seconds = int(params.get("period_seconds", 60))
+        statistic = params.get("statistic", "Average")
+
+        def _exec_cw() -> str:
+            session = assume_subagent_role(role_arn, "cw-alarm-creation")
+            cw_client = session.client("cloudwatch", region_name=AWS_REGION)
+            cw_client.put_metric_alarm(
+                AlarmName=alarm_name,
+                MetricName=metric_name,
+                Namespace=namespace,
+                Threshold=threshold,
+                ComparisonOperator=comparison_operator,
+                EvaluationPeriods=evaluation_periods,
+                Period=period_seconds,
+                Statistic=statistic,
+                Tags=[{"Key": "ManagedBy", "Value": "serenity-ops"}],
+            )
+            return f"CloudWatch alarm '{alarm_name}' was successfully created on metric {namespace}/{metric_name}."
+
+        return _exec_cw
+
+    return None

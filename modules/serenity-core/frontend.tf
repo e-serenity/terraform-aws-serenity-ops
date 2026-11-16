@@ -22,7 +22,7 @@ locals {
 resource "aws_s3_bucket" "dashboard" {
   count         = var.enable_dashboard ? 1 : 0
   bucket        = local.dashboard_bucket_name
-  force_destroy = true
+  force_destroy = var.dashboard_s3_force_destroy
 
   tags = merge(var.tags, {
     Name = local.dashboard_bucket_name

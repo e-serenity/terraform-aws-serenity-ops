@@ -30,10 +30,25 @@ def register_pending(
     details: str,
     callback: Callable[[], str],
     incident_id: str | None = None,
+    role_arn: str = "",
+    action_params: dict[str, Any] | None = None,
 ) -> str:
-    """Registers a pending action and returns its unique action_id."""
+    """Registers a pending action in memory and persists it to DynamoDB Hub when available."""
     action_id = str(uuid.uuid4())
     now = time.time()
+
+    record = {
+        "action_id": action_id,
+        "agent": agent_name,
+        "action": action_name,
+        "target": target,
+        "details": details,
+        "callback": callback,
+        "incident_id": incident_id,
+        "role_arn": role_arn,
+        "action_params": action_params or {},
+        "created_at": now,
+    }
 
     with _PENDING_LOCK:
         # Purge expired actions
@@ -41,25 +56,26 @@ def register_pending(
         for aid in expired:
             _PENDING.pop(aid, None)
 
-        _PENDING[action_id] = {
-            "action_id": action_id,
-            "agent": agent_name,
-            "action": action_name,
-            "target": target,
-            "details": details,
-            "callback": callback,
-            "incident_id": incident_id,
-            "created_at": now,
-        }
+        _PENDING[action_id] = record
 
+    hub.persist_pending_action(record)
     logger.info("Registered pending action [%s] for %s (%s on %s)", action_id, agent_name, action_name, target)
     return action_id
 
 
 def pop_pending(action_id: str) -> dict[str, Any] | None:
-    """Atomically retrieves and removes a pending action."""
+    """Atomically retrieves and removes a pending action from memory or DynamoDB Hub."""
     with _PENDING_LOCK:
         action = _PENDING.pop(action_id, None)
+
+    persisted = hub.pop_persisted_pending_action(action_id)
+    if not action and persisted:
+        from app.core import subagents
+
+        rebuilt_cb = subagents.rebuild_persisted_callback(persisted)
+        if rebuilt_cb:
+            persisted["callback"] = rebuilt_cb
+            action = persisted
 
     if not action:
         return None

@@ -120,8 +120,8 @@ Networking and compute resources are provisioned only when you deploy `serenity-
    When you provide an existing `cluster_arn` (with `capacity_provider_name` and `subnet_ids`), `serenity-bot` skips VPC, NAT Gateway, VPC Endpoint, and ECS cluster creation, and runs the bot service directly inside your cluster.
 3. **Bring-Your-Own VPC (`cluster_arn = ""`, `create_vpc = false`):**
    Provisions the `serenity-bot` ECS Managed Instances cluster and VPC Endpoints inside your existing `existing_vpc_id` and `subnet_ids`.
-4. **Container Image (`:stable` Image vs Private AWS ECR):**
-   - **By default (`create_ecr_repository = false`):** `serenity-bot` pulls `ghcr.io/e-serenity/serenity-bot:stable` so `terraform apply` works out of the box without a local Docker build step.
+4. **Container Image (Pinned `:0.1.2` Image vs Private AWS ECR):**
+   - **By default (`create_ecr_repository = false`):** `serenity-bot` pulls `ghcr.io/e-serenity/serenity-bot:0.1.2` so `terraform apply` works out of the box with a reproducible SemVer tag without a local Docker build step.
    - **For production (`create_ecr_repository = true`):** Terraform provisions a private `aws_ecr_repository` in your AWS account and points ECS to it so you do not depend on an external registry. See the **[`modules/serenity-bot` guide](../modules/serenity-bot/README.md#container-image-default-stable-vs-private-aws-ecr-recommended-for-production)** for the `docker buildx build --platform linux/arm64` commands to build and push your image.
 
 ---
@@ -129,5 +129,7 @@ Networking and compute resources are provisioned only when you deploy `serenity-
 ## LLM Models: AWS Bedrock & Resilient Fallback
 
 Serenity-Bot is designed with a multi-provider LLM strategy:
-* **Primary (AWS Bedrock):** Communicates privately with Anthropic Claude on AWS Bedrock via VPC Endpoints. Serverless models are enabled automatically across all AWS commercial regions; first-time accounts simply need to submit their company & use case details in the Amazon Bedrock console for Anthropic models.
-* **Fallback (Google Gemini API & more to come):** If AWS Bedrock access is pending or rate-limited, provide a `GEMINI_APIKEY` in Secrets Manager to automatically fall back to **Google Gemini** (`gemini-3.5-flash` / `gemini-3.8-flash` / `gemini-3.1-flash-lite`). Support for additional providers (OpenAI, Mistral) is coming in future releases.
+* **Primary (AWS Bedrock — `global.anthropic.claude-sonnet-5-5` by default):** Communicates with Anthropic Claude on AWS Bedrock. For strict regional data residency, configure `llm_primary_model` (or `CLAUDE_MODEL` in Secrets Manager) with a geographic inference profile:
+  * **US geo:** `us.anthropic.claude-sonnet-5-5` *(keeps data within US/Canada regions)*
+  * **EU geo:** `eu.anthropic.claude-sonnet-5-5` *(keeps data within EU regions)*
+* **Optional Fallback (`llm_fallback_provider = "none"` by default):** Disabled by default so data stays strictly within AWS. When desired, set `llm_fallback_provider` and `llm_fallback_model` (e.g., `llm_fallback_provider = "openai"` with `llm_fallback_model = "global.openai.gpt-6.1-sol"`, or `llm_fallback_provider = "gemini"` with `GEMINI_APIKEY`) to automatically fail over if the primary provider is throttled or unavailable.

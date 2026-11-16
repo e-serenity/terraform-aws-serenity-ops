@@ -8,7 +8,7 @@ data "archive_file" "dashboard_api" {
   count       = var.enable_dashboard ? 1 : 0
   type        = "zip"
   source_file = "${path.module}/lambda/api/index.py"
-  output_path = "${path.module}/.terraform/tmp-${local.name_prefix}-dashboard-api.zip"
+  output_path = "${path.module}/lambda/api/dashboard-api.zip"
 }
 
 data "aws_iam_policy_document" "dashboard_api_assume" {
@@ -40,19 +40,22 @@ resource "aws_iam_role_policy_attachment" "dashboard_api_logs" {
 data "aws_iam_policy_document" "dashboard_api_permissions" {
   count = var.enable_dashboard ? 1 : 0
 
-  statement {
-    sid    = "DynamoDBHubAccess"
-    effect = "Allow"
-    actions = [
-      "dynamodb:Query",
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem",
-    ]
-    resources = var.enable_dynamodb_hub ? [
-      aws_dynamodb_table.hub[0].arn,
-      "${aws_dynamodb_table.hub[0].arn}/index/*"
-    ] : ["*"]
+  dynamic "statement" {
+    for_each = var.enable_dynamodb_hub ? [1] : []
+    content {
+      sid    = "DynamoDBHubAccess"
+      effect = "Allow"
+      actions = [
+        "dynamodb:Query",
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+      ]
+      resources = [
+        aws_dynamodb_table.hub[0].arn,
+        "${aws_dynamodb_table.hub[0].arn}/index/*"
+      ]
+    }
   }
 
   statement {

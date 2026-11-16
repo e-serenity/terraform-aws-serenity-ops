@@ -23,8 +23,12 @@ SUPPORTED_PROVIDERS = ("bedrock", "gemini", "anthropic", "openai")
 
 
 def normalize_provider(provider: str | None) -> str:
-    """Normalizes a provider string to one of SUPPORTED_PROVIDERS."""
-    cleaned = (provider or "bedrock").strip().lower()
+    """Normalizes a provider string to one of SUPPORTED_PROVIDERS (or 'none' when disabled)."""
+    if provider is None:
+        return "bedrock"
+    cleaned = provider.strip().lower()
+    if cleaned in ("", "none", "disabled", "off", "false"):
+        return "none"
     if cleaned in ("aws", "aws_bedrock", "bedrock"):
         return "bedrock"
     if cleaned in ("google", "google_genai", "gemini"):
@@ -39,6 +43,8 @@ def normalize_provider(provider: str | None) -> str:
 def is_provider_available(provider: str) -> bool:
     """Checks whether the required credentials exist (and are not placeholders) for a provider."""
     norm = normalize_provider(provider)
+    if norm == "none":
+        return False
     if norm == "bedrock":
         # AWS Bedrock uses the ECS Task IAM role (or local AWS profile)
         return True

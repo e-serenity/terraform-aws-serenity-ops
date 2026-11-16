@@ -7,6 +7,12 @@ locals {
     { name = "MCP_SERVERS_CONFIG", valueFrom = "${local.secret_arn}:MCP_SERVERS_CONFIG::" },
   ]
 
+  datadog_env = var.enable_datadog ? [
+    { name = "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", value = "https://otlp.datadoghq.eu/v1/traces" },
+    { name = "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", value = "http/protobuf" },
+    { name = "DD_OTLP_SOURCE", value = "llmobs" },
+  ] : []
+
   datadog_secrets = var.enable_datadog ? [
     { name = "DATADOG_API_KEY", valueFrom = "${local.secret_arn}:DATADOG_API_KEY::" },
     { name = "DATADOG_APP_KEY", valueFrom = "${local.secret_arn}:DATADOG_APP_KEY::" },
@@ -62,7 +68,7 @@ module "ecs_service" {
   cluster_arn    = local.effective_cluster_arn
   propagate_tags = "SERVICE"
 
-  enable_execute_command = true
+  enable_execute_command = var.enable_execute_command
 
   cpu                      = var.cpu
   memory                   = var.memory
@@ -101,13 +107,20 @@ module "ecs_service" {
       enable_cloudwatch_logging = true
       cloudwatch_log_group_name = local.container_log_group_name
       memory_reservation        = 100
-      readonlyRootFilesystem    = false
+      readonlyRootFilesystem    = var.readonly_root_filesystem
       stopTimeout               = 60 * 5
 
-      environment = [
-        { name = "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", value = "https://otlp.datadoghq.eu/v1/traces" },
-        { name = "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", value = "http/protobuf" },
-        { name = "DD_OTLP_SOURCE", value = "llmobs" },
+      linuxParameters = {
+        initProcessEnabled = true
+        tmpfs = [
+          {
+            containerPath = "/tmp"
+            size          = 64
+          }
+        ]
+      }
+
+      environment = concat([
         { name = "HEALTH_PORT", value = tostring(local.health_port) },
         { name = "ENVIRONMENT", value = var.environment },
         { name = "AWS_DEFAULT_REGION", value = var.region },
@@ -129,7 +142,7 @@ module "ecs_service" {
         { name = "SLACK_ALLOWED_CHANNEL_IDS", value = join(",", var.slack_allowed_channel_ids) },
         { name = "SLACK_ALLOWED_USER_IDS", value = join(",", var.slack_allowed_user_ids) },
         { name = "SLACK_ALLOW_DIRECT_MESSAGES", value = tostring(var.slack_allow_direct_messages) },
-      ]
+      ], local.datadog_env)
 
       secrets = concat(local.base_secrets, local.datadog_secrets, local.gitlab_secrets, local.github_secrets)
 
@@ -266,8 +279,8 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:Scan"
         ]
         Resource = [
-          "arn:aws:dynamodb:*:*:table/${var.dynamodb_table_name}",
-          "arn:aws:dynamodb:*:*:table/${var.dynamodb_table_name}/index/*"
+          "arn:aws:dynamodb:${var.region}:${data.aws_caller_identity.current.account_id}:table/${var.dynamodb_table_name}",
+          "arn:aws:dynamodb:${var.region}:${data.aws_caller_identity.current.account_id}:table/${var.dynamodb_table_name}/index/*"
         ]
       }
     ]
@@ -286,7 +299,7 @@ resource "aws_dynamodb_table_item" "bot_registration" {
     name           = { S = "serenity-bot" }
     status         = { S = "ACTIVE" }
     environment    = { S = var.environment }
-    version        = { S = "1.2.0" }
+    version        = { S = "0.1.2" }
     retention_days = { N = tostring(var.history_retention_days) }
     integrations = {
       M = {
@@ -301,7 +314,7 @@ resource "aws_dynamodb_table_item" "bot_registration" {
 
 resource "aws_iam_policy" "sts_assume_subagents" {
   name        = "${var.application}-${var.environment}-sts-subagents-policy"
-  description = "Allows Serenity-Bot to assume scoped domain sub-agent roles (SES, CloudWatch) after human approval"
+  description = "Allows Serenity-Bot to assume scoped domain sub-agent roles (SES, CloudWatch) in the current AWS account after human approval"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -309,7 +322,12 @@ resource "aws_iam_policy" "sts_assume_subagents" {
       {
         Effect   = "Allow"
         Action   = ["sts:AssumeRole"]
-        Resource = ["arn:aws:iam::*:role/*serenity-agent-*"]
+        Resource = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/*serenity-agent-*"]
+        Condition = {
+          StringEquals = {
+            "iam:ResourceTag/ManagedBy" = "serenity-ops"
+          }
+        }
       }
     ]
   })

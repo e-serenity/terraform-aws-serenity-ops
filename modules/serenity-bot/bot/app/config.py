@@ -31,7 +31,7 @@ class Settings:
     slack_allow_direct_messages: bool = _as_bool(os.getenv("SLACK_ALLOW_DIRECT_MESSAGES"), default=True)
 
     # LLM Settings (Unified Multi-Provider Routing with AWS Bedrock default & Fallback)
-    claude_model: str = os.getenv("CLAUDE_MODEL", "global.anthropic.claude-sonnet-4-6")
+    claude_model: str = os.getenv("CLAUDE_MODEL", "global.anthropic.claude-sonnet-5-5")
     gemini_api_key: str = os.getenv("GEMINI_APIKEY", "")
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
     gemini_fallback_model: str = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.8-flash")
@@ -40,7 +40,7 @@ class Settings:
 
     llm_primary_provider: str = os.getenv("LLM_PRIMARY_PROVIDER", "bedrock")
     llm_primary_model: str = os.getenv("LLM_PRIMARY_MODEL", "")
-    llm_fallback_provider: str = os.getenv("LLM_FALLBACK_PROVIDER", "gemini")
+    llm_fallback_provider: str = os.getenv("LLM_FALLBACK_PROVIDER", "none")
     llm_fallback_model: str = os.getenv("LLM_FALLBACK_MODEL", "")
 
     # Agentic Guardrails, Token Budget & Circuit Breaker
@@ -93,7 +93,12 @@ class Settings:
     def effective_fallback_model(self) -> str:
         if self.llm_fallback_model and self.llm_fallback_model.strip():
             return self.llm_fallback_model.strip()
-        return self.gemini_model
+        prov = (self.llm_fallback_provider or "").strip().lower()
+        if prov in ("", "none", "disabled", "off", "false"):
+            return ""
+        if prov in ("gemini", "google", "google_genai"):
+            return self.gemini_model
+        return ""
 
     @property
     def mcp_servers_config(self) -> dict[str, Any]:
