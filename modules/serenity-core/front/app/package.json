@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "sync:output": "tsc && vite build --outDir ../output --emptyOutDir",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -28,7 +28,7 @@ locals {
 }
 
 data "aws_subnet" "ecs_service" {
-  count = local.vpc_id == null ? 1 : 0
+  count = local.create_ecs_cluster ? 0 : 1
   id    = element(local.private_subnet_ids, 0)
 }
 
@@ -37,7 +37,7 @@ data "aws_subnet" "ecs_service" {
 resource "aws_security_group" "ecs_service" {
   name_prefix = "${local.name_prefix}-ecs-sg-"
   description = "Security group for ${local.name_prefix} ECS service tasks"
-  vpc_id      = local.vpc_id != null ? local.vpc_id : data.aws_subnet.ecs_service[0].vpc_id
+  vpc_id      = local.create_ecs_cluster ? local.vpc_id : data.aws_subnet.ecs_service[0].vpc_id
 
   egress {
     description = "Allow all outbound traffic"

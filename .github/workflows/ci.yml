@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   terraform:
-    name: Terraform Format & Validate
+    name: Terraform Format, Validate, Test & Security Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,10 +27,11 @@ jobs:
       - name: Check Terraform formatting
         run: terraform fmt -check -recursive
 
-      - name: Validate root module
+      - name: Validate & Test root module
         run: |
           terraform init -backend=false
           terraform validate
+          terraform test
 
       - name: Validate serenity-core module
         working-directory: modules/serenity-core
@@ -61,6 +62,24 @@ jobs:
         run: |
           terraform init -backend=false
           terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.55.0
+
+      - name: Run TFLint across root & submodules
+        run: |
+          tflint --init
+          tflint --recursive
+
+      - name: Run Trivy IaC Security Scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "config"
+          scan-ref: "."
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
 
   python:
     name: Python API & Agent Tests
@@ -106,6 +125,13 @@ jobs:
 
       - name: Typecheck & Build production bundle
         run: npm run build
+
+      - name: Verify committed front/output bundle matches build structure
+        run: |
+          test -f ../output/index.html
+          test -f dist/index.html
+          test "$(find ../output/assets -name '*.js' | wc -l)" -eq "$(find dist/assets -name '*.js' | wc -l)"
+          test "$(find ../output/assets -name '*.css' | wc -l)" -eq "$(find dist/assets -name '*.css' | wc -l)"
 
   docker:
     name: Build & Publish Serenity-Bot ARM64 Image (GHCR)
