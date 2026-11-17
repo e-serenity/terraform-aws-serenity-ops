@@ -1,6 +1,14 @@
-# 🛡️ Serenity-Ops
+<p align="center">
+  <a href="https://e-serenity.fr/">
+    <img src="https://raw.githubusercontent.com/e-serenity/terraform-aws-serenity-ops/main/docs/assets/logo_e-serenity.png" alt="E-Serenity logo" width="80">
+  </a>
+</p>
 
-**Modular, Self-Hosted CloudSecOps & AIOps Platform for AWS, Deployed via Terraform.**
+<h1 align="center">Serenity-Ops</h1>
+
+<p align="center">
+  <strong>Modular, Self-Hosted CloudSecOps &amp; AIOps Platform for AWS, Deployed via Terraform.</strong>
+</p>
 
 [![CI](https://github.com/e-serenity/terraform-aws-serenity-ops/actions/workflows/ci.yml/badge.svg)](https://github.com/e-serenity/terraform-aws-serenity-ops/actions/workflows/ci.yml)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-e--serenity%2Fterraform--aws--serenity--ops-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/e-serenity/terraform-aws-serenity-ops)

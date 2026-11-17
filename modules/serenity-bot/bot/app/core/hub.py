@@ -97,7 +97,7 @@ def record_incident(
         "action": "none",
         "target": "none",
         "status": "COMPLETED",
-        "details": "Investigation terminée sans action d'écriture requise."
+        "details": "Investigation completed with no write action required."
     }
 
     item = {

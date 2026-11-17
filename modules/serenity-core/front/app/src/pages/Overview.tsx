@@ -40,7 +40,7 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* 1. Header / Console Statut Opérationnel (Quiet Chrome) */}
+      {/* 1. Header / Operational Status Console (Quiet Chrome) */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
         </div>
       </div>
 
-      {/* 2. Point Focal : File d'approbation Human-in-the-Loop prioritaire si incident */}
+      {/* 2. Focal Point: Priority Human-in-the-Loop approval queue when incidents are pending */}
       {pendingIncidentsCount > 0 && (
         <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -122,9 +122,9 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
         </div>
       )}
 
-      {/* 3. Métriques Synthétiques Opérationnelles (Data-First & Chiffres Tabulaires) */}
+      {/* 3. Operational Summary Metrics (Data-First & Tabular Figures) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Metric 1 : Score de Santé */}
+        {/* Metric 1: Health Score */}
         <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400 mb-2">
             <span className="text-xs font-medium text-slate-400">
@@ -153,7 +153,7 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
           </span>
         </div>
 
-        {/* Metric 2 : Modules Synchronisés */}
+        {/* Metric 2: Synchronized Modules */}
         <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400 mb-2">
             <span className="text-xs font-medium text-slate-400">
@@ -177,7 +177,7 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
           </span>
         </div>
 
-        {/* Metric 3 : Délivrabilité SES */}
+        {/* Metric 3: SES Deliverability */}
         <div
           onClick={() => setCurrentTab('serenity-ses')}
           className="bg-slate-900/60 hover:bg-slate-900/90 hover:border-slate-700 cursor-pointer border border-slate-800 rounded-xl p-4 flex flex-col justify-between transition-colors"
@@ -209,7 +209,7 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
           </span>
         </div>
 
-        {/* Metric 4 : Approbations IA */}
+        {/* Metric 4: AI Approvals */}
         <div
           onClick={() => setCurrentTab('serenity-bot')}
           className="bg-slate-900/60 hover:bg-slate-900/90 hover:border-slate-700 cursor-pointer border border-slate-800 rounded-xl p-4 flex flex-col justify-between transition-colors"
@@ -242,7 +242,7 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
         </div>
       </div>
 
-      {/* 4. Registre des Modules DynamoDB (Single-Table Design) */}
+      {/* 4. DynamoDB Module Registry (Single-Table Design) */}
       <div>
         <div className="flex items-center justify-between mb-3 px-1">
           <div>
@@ -353,7 +353,7 @@ export const Overview: React.FC<OverviewProps> = ({ setCurrentTab }) => {
         </div>
       </div>
 
-      {/* 5. Alarmes CloudWatch sous Surveillance (Affichage Épuré) */}
+      {/* 5. Monitored CloudWatch Alarms (Clean View) */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="space-y-0.5">

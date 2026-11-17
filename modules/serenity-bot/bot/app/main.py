@@ -13,7 +13,7 @@ from app.config import settings
 from app.core import confirmations, hub
 from app.core.prerequisites import prerequisites_check
 from app.core.utils.logging import get_logger, log_message, setup_logging
-from app.core.utils.redaction import redact_secrets
+from app.core.utils.redaction import is_configured_secret, redact_secrets
 from app.integrations import (
     extract_slack_event_content,
     get_known_service_names,
@@ -29,7 +29,10 @@ setup_logging(level=settings.log_level)
 setup_datadog_environment()
 
 logger = get_logger("main")
-slack_app = App(token=settings.slack_bot_token)
+slack_app = App(
+    token=settings.slack_bot_token if is_configured_secret(settings.slack_bot_token) else "xoxb-placeholder",
+    token_verification_enabled=is_configured_secret(settings.slack_bot_token),
+)
 health_app = FastAPI(title="Serenity-Ops Health Service")
 socket_handler: SocketModeHandler | None = None
 _startup_prerequisites: dict[str, Any] | None = None
@@ -73,10 +76,10 @@ def _execute_agent_workflow(query_text: str, channel: str, thread_ts: str, clien
     except Exception as exc:
         logger.exception("Investigation processing encountered an error")
         safe_err = redact_secrets(str(exc))
-        outcome = f":rotating_light: *Erreur :* L'investigation n'a pas pu aboutir. `{safe_err}`"
+        outcome = f":rotating_light: *Error:* Investigation failed to complete. `{safe_err}`"
 
     if len(outcome) > MAX_SLACK_TEXT_SIZE:
-        outcome = outcome[:MAX_SLACK_TEXT_SIZE] + "\n[... réponse tronquée]"
+        outcome = outcome[:MAX_SLACK_TEXT_SIZE] + "\n[... response truncated]"
 
     try:
         client.chat_postMessage(channel=channel, thread_ts=thread_ts, text=outcome)
@@ -90,10 +93,10 @@ def _execute_agent_workflow(query_text: str, channel: str, thread_ts: str, clien
 
         for action_data in fresh_actions:
             detail_summary = (
-                f"• Agent : `{action_data['agent']}`\n"
-                f"• Action : `{action_data['action']}`\n"
-                f"• Cible : `{action_data['target']}`\n"
-                f"• Description : {action_data['details']}"
+                f"• Agent: `{action_data['agent']}`\n"
+                f"• Action: `{action_data['action']}`\n"
+                f"• Target: `{action_data['target']}`\n"
+                f"• Description: {action_data['details']}"
             )
             ui_blocks = confirmations.create_slack_approval_blocks(
                 action_id=action_data["action_id"],
