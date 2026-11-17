@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -13,6 +14,58 @@ RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "90"))
 
 dynamodb = boto3.resource("dynamodb", region_name=REGION)
 cw_client = boto3.client("cloudwatch", region_name=REGION)
+
+_EMAIL_RE = re.compile(r"\b([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b")
+_ARN_ACCOUNT_RE = re.compile(r"(arn:aws[a-zA-Z-]*:[a-zA-Z0-9-]+:[a-zA-Z0-9-]*:)(\d{12})(:)")
+_SECRET_PATTERNS = [
+    (re.compile(r"\b(AKIA|ASIA)[0-9A-Z]{16}\b"), "[REDACTED_AWS_KEY]"),
+    (re.compile(r"\bxox[baprs]-[0-9A-Za-z-]{10,}\b"), "[REDACTED_SLACK_TOKEN]"),
+    (re.compile(r"(?i)(Bearer\s+)[A-Za-z0-9\-._~+/]+=*"), r"\1[REDACTED_TOKEN]"),
+]
+
+
+def _mask_account_id(account_id: str) -> str:
+    clean = (account_id or "").strip()
+    if len(clean) >= 8:
+        return "*" * (len(clean) - 4) + clean[-4:]
+    return "****" if clean else ""
+
+
+def _mask_email(email: str) -> str:
+    raw = (email or "").strip()
+    if "@" not in raw:
+        return raw
+    local, domain = raw.split("@", 1)
+    if len(local) <= 2:
+        masked_local = f"{local[:1]}***"
+    else:
+        masked_local = f"{local[0]}***{local[-1]}"
+    return f"{masked_local}@{domain}"
+
+
+def _redact_sensitive_text(value: str) -> str:
+    if not value or not isinstance(value, str):
+        return value
+    redacted = _EMAIL_RE.sub(lambda m: _mask_email(m.group(0)), value)
+    redacted = _ARN_ACCOUNT_RE.sub(
+        lambda m: f"{m.group(1)}{_mask_account_id(m.group(2))}{m.group(3)}",
+        redacted,
+    )
+    if ACCOUNT_ID and len(ACCOUNT_ID) >= 8:
+        redacted = redacted.replace(ACCOUNT_ID, _mask_account_id(ACCOUNT_ID))
+    for pattern, replacement in _SECRET_PATTERNS:
+        redacted = pattern.sub(replacement, redacted)
+    return redacted
+
+
+def _redact_value(val):
+    if isinstance(val, str):
+        return _redact_sensitive_text(val)
+    if isinstance(val, dict):
+        return {k: _redact_value(v) for k, v in val.items()}
+    if isinstance(val, list):
+        return [_redact_value(item) for item in val]
+    return val
 
 
 def _resp(status: int, body: dict):
@@ -97,14 +150,15 @@ def _get_live_state():
             evt_type = item.get("type", "HardBounce")
             if evt_type == "Bounce":
                 evt_type = "HardBounce"
+            raw_reason = item.get("reason") or f"Domain: {item.get('domain', 'unknown')} ({item.get('subType', 'General')})"
             email_events.append({
                 "id": item.get("id", sk),
                 "timestamp": item.get("timestamp", sk.replace("EVENT#", "")[:19]),
                 "type": evt_type,
-                "recipient": item.get("recipient", "unknown"),
-                "smtpCode": diag,
-                "reason": item.get("reason") or f"Domain: {item.get('domain', 'unknown')} ({item.get('subType', 'General')})",
-                "suggestedAction": item.get("aiRecommendation") or "Add to SES Account Suppression List",
+                "recipient": _mask_email(str(item.get("recipient", "unknown"))),
+                "smtpCode": _redact_sensitive_text(str(diag)),
+                "reason": _redact_sensitive_text(str(raw_reason)),
+                "suggestedAction": _redact_sensitive_text(str(item.get("aiRecommendation") or "Add to SES Account Suppression List")),
                 "actionStatus": item.get("actionStatus", "PENDING"),
             })
 
@@ -140,17 +194,18 @@ def _get_live_state():
     ] + legacy_inc_items
     incidents = []
     for item in inc_items:
+        raw_traces = item.get("mcpTraces") or item.get("mcp_traces") or []
         incidents.append({
             "id": item.get("id") or item.get("incident_id") or item.get("SK", ""),
             "timestamp": item.get("timestamp") or item.get("created_at", ""),
             "kind": item.get("kind", "ALERT"),
             "source": item.get("source", "Slack (@Serenity-Ops)"),
-            "requester": item.get("requester", ""),
-            "trigger": item.get("trigger", ""),
+            "requester": _redact_sensitive_text(str(item.get("requester", ""))),
+            "trigger": _redact_sensitive_text(str(item.get("trigger", ""))),
             "severity": item.get("severity", "INFO"),
-            "mcpTraces": item.get("mcpTraces") or item.get("mcp_traces") or [],
-            "rca": item.get("rca", ""),
-            "proposedAction": item.get("proposedAction") or item.get("proposed_action"),
+            "mcpTraces": [_redact_sensitive_text(str(t)) for t in raw_traces],
+            "rca": _redact_sensitive_text(str(item.get("rca", ""))),
+            "proposedAction": _redact_value(item.get("proposedAction") or item.get("proposed_action")),
         })
 
     chat_items = _query_pk(table, "SERENITY#CHAT", limit=50, scan_forward=True)
@@ -162,13 +217,13 @@ def _get_live_state():
             "author": item.get("author", "Serenity-Ops"),
             "channel": item.get("channel", "Web Console"),
             "timestamp": item.get("timestamp", ""),
-            "text": item.get("text", ""),
+            "text": _redact_sensitive_text(str(item.get("text", ""))),
             "toolsUsed": item.get("toolsUsed", []),
         })
 
     return {
         "mode": "live",
-        "accountId": ACCOUNT_ID,
+        "accountId": _mask_account_id(ACCOUNT_ID),
         "environment": ENVIRONMENT,
         "region": REGION,
         "hubTableName": TABLE_NAME,
