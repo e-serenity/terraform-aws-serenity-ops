@@ -76,7 +76,8 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_enable_dedicated_ip_pool"></a> [enable_dedicated_ip_pool](#input\_enable_dedicated_ip_pool) | Whether to provision an AWS SES v2 Managed Dedicated IP Pool (incurs AWS monthly dedicated IP add-on charges). Set to false to use the free shared SES pool. | `bool` | `true` | no |
+| <a name="input_agent_trusted_principal_arns"></a> [agent_trusted_principal_arns](#input\_agent_trusted_principal_arns) | Optional list of IAM Role ARNs allowed to assume the serenity-agent-ses role (e.g., Serenity-Bot ECS task role ARN). Defaults to the current AWS account root when empty. | `list(string)` | `[]` | no |
+| <a name="input_enable_dedicated_ip_pool"></a> [enable_dedicated_ip_pool](#input\_enable_dedicated_ip_pool) | Whether to provision an AWS SES v2 Managed Dedicated IP Pool (disabled by default to avoid monthly AWS dedicated IP charges; set to true when dedicated IPs are required). | `bool` | `false` | no |
 | <a name="input_enable_serenity_agent"></a> [enable_serenity_agent](#input\_enable_serenity_agent) | Whether to provision the scoped IAM role for serenity-agent-ses (used by the Serenity-Ops AI orchestrator after human approval) | `bool` | `true` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment name (e.g., prod, preprod, dev) | `string` | `"prod"` | no |
 | <a name="input_name_prefix"></a> [name_prefix](#input\_name_prefix) | Prefix applied to all created AWS SES, SNS, SQS, Lambda, and DynamoDB resources | `string` | n/a | yes |
@@ -91,5 +92,6 @@ No modules.
 | <a name="output_configuration_set"></a> [configuration_set](#output\_configuration_set) | The ID of the configuration set to set on SES identities for using features of this module |
 | <a name="output_dedicated_pool_name"></a> [dedicated_pool_name](#output\_dedicated_pool_name) | Name of the managed dedicated IP pool (null when enable_dedicated_ip_pool = false) |
 | <a name="output_sns_topic_arn"></a> [sns_topic_arn](#output\_sns_topic_arn) | ARN of the SNS topic receiving SES sending reports |
+| <a name="output_sqs_dlq_arn"></a> [sqs_dlq_arn](#output\_sqs_dlq_arn) | ARN of the Dead-Letter Queue (DLQ) for failed SES sending reports |
 | <a name="output_sqs_queue_arn"></a> [sqs_queue_arn](#output\_sqs_queue_arn) | ARN of the SQS queue buffering sending reports |
 <!-- END_TF_DOCS -->

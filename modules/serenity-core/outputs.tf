@@ -22,3 +22,8 @@ output "dashboard_s3_bucket_name" {
   description = "Private S3 bucket name hosting the Web Dashboard"
   value       = var.enable_dashboard ? aws_s3_bucket.dashboard[0].id : null
 }
+
+output "dashboard_api_role_arn" {
+  description = "IAM Role ARN of the Web Dashboard Live API Lambda (null when enable_dashboard = false)"
+  value       = var.enable_dashboard ? aws_iam_role.dashboard_api[0].arn : null
+}

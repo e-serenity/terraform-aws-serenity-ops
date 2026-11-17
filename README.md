@@ -1,6 +1,14 @@
-# 🛡️ Serenity-Ops
+<p align="center">
+  <a href="https://e-serenity.fr/">
+    <img src="https://raw.githubusercontent.com/e-serenity/terraform-aws-serenity-ops/main/docs/assets/logo_e-serenity.png" alt="E-Serenity logo" width="80">
+  </a>
+</p>
 
-**Modular, Self-Hosted CloudSecOps & AIOps Platform for AWS, Deployed via Terraform.**
+<h1 align="center">Serenity-Ops</h1>
+
+<p align="center">
+  <strong>Modular, Self-Hosted CloudSecOps &amp; AIOps Platform for AWS, Deployed via Terraform.</strong>
+</p>
 
 [![CI](https://github.com/e-serenity/terraform-aws-serenity-ops/actions/workflows/ci.yml/badge.svg)](https://github.com/e-serenity/terraform-aws-serenity-ops/actions/workflows/ci.yml)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-e--serenity%2Fterraform--aws--serenity--ops-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/e-serenity/terraform-aws-serenity-ops)
@@ -97,7 +105,12 @@ Or deploy any module standalone via submodule syntax (`source = "e-serenity/sere
 **Optional**
 
 - **GitHub / GitLab / Datadog / Grafana tokens**: populate in AWS Secrets Manager when enabling the corresponding integrations (`enable_github`, `enable_gitlab`, ...).
-- **`GEMINI_APIKEY`**: only if you want the Google Gemini fallback. ⚠️ Note that enabling this fallback sends prompts outside your AWS account.
+- **LLM Primary & Fallback Routing (`llm_primary_model`, `llm_fallback_provider`, `llm_fallback_model`)**:
+  - Defaults to `global.anthropic.claude-sonnet-5-5` on **AWS Bedrock** (`llm_fallback_provider = "none"` by default so prompts stay strictly inside AWS).
+  - For regional data residency, set `llm_primary_model` (or `CLAUDE_MODEL` in Secrets Manager) to:
+    - **US geo:** `us.anthropic.claude-sonnet-5-5` *(keeps data within US/Canada regions)*
+    - **EU geo:** `eu.anthropic.claude-sonnet-5-5` *(keeps data within EU regions)*
+  - To enable an automatic fallback model when the primary model is throttled or unavailable, configure `llm_fallback_provider` and `llm_fallback_model` (for example `llm_fallback_provider = "openai"` and `llm_fallback_model = "global.openai.gpt-6.1-sol"`, or `llm_fallback_provider = "gemini"` with `GEMINI_APIKEY`). ⚠️ *Note: enabling an external provider fallback sends prompts outside your AWS account.*
 
 ## Examples
 
@@ -162,29 +175,34 @@ After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_A
 | <a name="input_bot_cpu"></a> [bot_cpu](#input\_bot_cpu) | CPU units allocated to the Serenity-Bot ECS task (e.g., 1024 = 1 vCPU) | `number` | `1024` | no |
 | <a name="input_bot_create_ecr_repository"></a> [bot_create_ecr_repository](#input\_bot_create_ecr_repository) | When true, provisions a private AWS ECR repository and configures ECS to pull '<ecr_repository_url>:<bot_ecr_image_tag>' instead of bot_image | `bool` | `false` | no |
 | <a name="input_bot_create_secrets"></a> [bot_create_secrets](#input\_bot_create_secrets) | When true, provisions an AWS Secrets Manager secret for Serenity-Bot credentials. Set to false and pass 'bot_existing_secret_arn' to bring your own secret without storing tokens in Terraform state. | `bool` | `true` | no |
+| <a name="input_bot_ecr_force_delete"></a> [bot_ecr_force_delete](#input\_bot_ecr_force_delete) | Whether to allow deleting the private ECR repository even when it contains images (defaults to false for production safety) | `bool` | `false` | no |
 | <a name="input_bot_ecr_image_tag"></a> [bot_ecr_image_tag](#input\_bot_ecr_image_tag) | Image tag pulled from the private ECR repository when bot_create_ecr_repository = true (defaults to var.environment when empty) | `string` | `""` | no |
+| <a name="input_bot_ecr_image_tag_mutability"></a> [bot_ecr_image_tag_mutability](#input\_bot_ecr_image_tag_mutability) | Tag mutability setting for the private ECR repository ('IMMUTABLE' or 'MUTABLE'). Defaults to 'IMMUTABLE' to prevent image tag tampering. | `string` | `"IMMUTABLE"` | no |
 | <a name="input_bot_enable_aws_readonly_access"></a> [bot_enable_aws_readonly_access](#input\_bot_enable_aws_readonly_access) | Opt-in: Attach the broad AWS managed ReadOnlyAccess policy to the Serenity-Bot task role in addition to the default least-privilege observability policy | `bool` | `false` | no |
+| <a name="input_bot_enable_execute_command"></a> [bot_enable_execute_command](#input\_bot_enable_execute_command) | Whether to enable Amazon ECS Exec on the Serenity-Bot task (defaults to false for least-privilege container hardening) | `bool` | `false` | no |
 | <a name="input_bot_existing_secret_arn"></a> [bot_existing_secret_arn](#input\_bot_existing_secret_arn) | ARN of an existing AWS Secrets Manager secret containing Serenity-Bot credentials (required when bot_create_secrets = false and enable_bot = true) | `string` | `""` | no |
-| <a name="input_bot_image"></a> [bot_image](#input\_bot_image) | Container image URI used when bot_create_ecr_repository = false. Defaults to the official pre-built GHCR image (:stable). | `string` | `"ghcr.io/e-serenity/serenity-bot:stable"` | no |
+| <a name="input_bot_image"></a> [bot_image](#input\_bot_image) | Container image URI used when bot_create_ecr_repository = false. Defaults to the pinned SemVer GHCR release image (:0.1.2). | `string` | `"ghcr.io/e-serenity/serenity-bot:0.1.2"` | no |
 | <a name="input_bot_initial_secrets"></a> [bot_initial_secrets](#input\_bot_initial_secrets) | Optional initial secrets map to seed into AWS Secrets Manager when bot_create_secrets = true (merged over defaults). Prefer populating secrets directly in AWS Secrets Manager or passing 'bot_existing_secret_arn' in production to avoid storing tokens in Terraform state. | `map(string)` | `{}` | no |
 | <a name="input_bot_memory"></a> [bot_memory](#input\_bot_memory) | Memory in MiB allocated to the Serenity-Bot ECS task (e.g., 1024 = 1 GiB) | `number` | `1024` | no |
+| <a name="input_bot_readonly_root_filesystem"></a> [bot_readonly_root_filesystem](#input\_bot_readonly_root_filesystem) | Whether to mount the container root filesystem as read-only (defaults to true with a /tmp tmpfs mount) | `bool` | `true` | no |
 | <a name="input_bot_region_backup"></a> [bot_region_backup](#input\_bot_region_backup) | Optional replica region for Serenity-Bot AWS Secrets Manager secret | `string` | `""` | no |
 | <a name="input_capacity_provider_name"></a> [capacity_provider_name](#input\_capacity_provider_name) | Name of the ECS Managed Instances capacity provider (required when cluster_arn is provided) | `string` | `""` | no |
 | <a name="input_cluster_arn"></a> [cluster_arn](#input\_cluster_arn) | Optional ARN of an existing ECS cluster for Serenity-Bot. Leave empty ('') to automatically provision a dedicated ECS cluster and VPC. | `string` | `""` | no |
 | <a name="input_create"></a> [create](#input\_create) | Controls whether resources should be created (affects nearly all resources) | `bool` | `true` | no |
 | <a name="input_create_vpc"></a> [create_vpc](#input\_create_vpc) | When true (and cluster_arn is empty), creates a dedicated VPC, subnets, NAT Gateway(s), and VPC endpoints for Serenity-Bot | `bool` | `true` | no |
-| <a name="input_dashboard_allowed_ips"></a> [dashboard_allowed_ips](#input\_dashboard_allowed_ips) | Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (empty disables IP filtering) | `list(string)` | `[]` | no |
+| <a name="input_dashboard_allowed_ips"></a> [dashboard_allowed_ips](#input\_dashboard_allowed_ips) | Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (fail-closed by default: empty [] blocks all public access; specify your VPN/office CIDRs or explicitly set ['0.0.0.0/0'] to open publicly) | `list(string)` | `[]` | no |
 | <a name="input_dashboard_price_class"></a> [dashboard_price_class](#input\_dashboard_price_class) | CloudFront price class for the Web Dashboard (PriceClass_100, PriceClass_200, PriceClass_All) | `string` | `"PriceClass_100"` | no |
+| <a name="input_dashboard_s3_force_destroy"></a> [dashboard_s3_force_destroy](#input\_dashboard_s3_force_destroy) | Whether to allow force-destroying the S3 bucket hosting the Web Dashboard even when non-empty (defaults to false for production safety) | `bool` | `false` | no |
 | <a name="input_dynamodb_enable_pitr"></a> [dynamodb_enable_pitr](#input\_dynamodb_enable_pitr) | Enable Point-in-Time Recovery (PITR) on the DynamoDB Hub table | `bool` | `false` | no |
 | <a name="input_dynamodb_hub_table_name"></a> [dynamodb_hub_table_name](#input\_dynamodb_hub_table_name) | Custom DynamoDB Hub table name (defaults to <project_name>-<environment>-hub) | `string` | `""` | no |
 | <a name="input_dynamodb_table_name"></a> [dynamodb_table_name](#input\_dynamodb_table_name) | Optional existing Serenity-Ops DynamoDB Hub table name when enable_core = false or enable_dynamodb_hub = false (leave empty '' for standalone mode) | `string` | `""` | no |
 | <a name="input_ecs_allowed_instance_types"></a> [ecs_allowed_instance_types](#input\_ecs_allowed_instance_types) | Allowed EC2 instance types or families for ECS Managed Instances | `list(string)` | `["m8g.*", "m7g.*", "m6g.*", "m6a.*", "t4g.*"]` | no |
 | <a name="input_ecs_burstable_performance"></a> [ecs_burstable_performance](#input\_ecs_burstable_performance) | Burstable instance policy (included, required, excluded) | `string` | `"included"` | no |
 | <a name="input_ecs_cluster_name"></a> [ecs_cluster_name](#input\_ecs_cluster_name) | Custom ECS cluster name when created by Serenity-Bot (defaults to <bot_application>-<environment>-cluster-managed) | `string` | `""` | no |
-| <a name="input_ecs_container_insights"></a> [ecs_container_insights](#input\_ecs_container_insights) | ECS Container Insights mode (enhanced, enabled, or disabled) | `string` | `"enhanced"` | no |
+| <a name="input_ecs_container_insights"></a> [ecs_container_insights](#input\_ecs_container_insights) | ECS Container Insights mode (enhanced, enabled, or disabled). Defaults to 'enabled' to avoid extra per-metric Enhanced Container Insights charges. | `string` | `"enabled"` | no |
 | <a name="input_ecs_instance_min_memory_mib"></a> [ecs_instance_min_memory_mib](#input\_ecs_instance_min_memory_mib) | Minimum memory (in MiB) for ECS Managed Instances selection | `number` | `128` | no |
 | <a name="input_ecs_instance_min_vcpu"></a> [ecs_instance_min_vcpu](#input\_ecs_instance_min_vcpu) | Minimum vCPU count for ECS Managed Instances selection | `number` | `1` | no |
-| <a name="input_enable_bedrock_endpoint"></a> [enable_bedrock_endpoint](#input\_enable_bedrock_endpoint) | Enable AWS Bedrock Runtime Interface VPC Endpoint (used when cluster_arn is empty) | `bool` | `true` | no |
+| <a name="input_enable_bedrock_endpoint"></a> [enable_bedrock_endpoint](#input\_enable_bedrock_endpoint) | Enable AWS Bedrock Runtime Interface VPC Endpoint (~$7.20/mo per AZ, used when cluster_arn is empty). Disabled by default to minimize idle costs when NAT Gateway is enabled. | `bool` | `false` | no |
 | <a name="input_enable_bot"></a> [enable_bot](#input\_enable_bot) | Enable the Serenity-Bot AI orchestrator (Slack Socket Mode + AWS Bedrock + MCP sub-agents) | `bool` | `true` | no |
 | <a name="input_enable_core"></a> [enable_core](#input\_enable_core) | Enable the Serenity-Core serverless Hub (DynamoDB Single-Table Hub + CloudFront Web Console + Live API Lambda) | `bool` | `true` | no |
 | <a name="input_enable_dashboard"></a> [enable_dashboard](#input\_enable_dashboard) | Enable Serenity-Ops Web Dashboard (Private S3 + CloudFront OAC + Live API Lambda) when enable_core = true | `bool` | `true` | no |
@@ -203,9 +221,9 @@ After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_A
 | <a name="input_existing_vpc_id"></a> [existing_vpc_id](#input\_existing_vpc_id) | Existing VPC ID (required when cluster_arn is empty and create_vpc = false) | `string` | `""` | no |
 | <a name="input_gitlab_allowed_namespace"></a> [gitlab_allowed_namespace](#input\_gitlab_allowed_namespace) | Optional allowed GitLab group/namespace prefix (e.g., 'my-org/') | `string` | `""` | no |
 | <a name="input_history_retention_days"></a> [history_retention_days](#input\_history_retention_days) | Retention period in days for incident history, chat messages, and audit records via native DynamoDB TTL | `number` | `90` | no |
-| <a name="input_llm_fallback_model"></a> [llm_fallback_model](#input\_llm_fallback_model) | Fallback LLM model ID (defaults to 'gemini-3.5-flash' when llm_fallback_provider = 'gemini') | `string` | `"gemini-3.5-flash"` | no |
-| <a name="input_llm_fallback_provider"></a> [llm_fallback_provider](#input\_llm_fallback_provider) | Fallback LLM provider invoked automatically when the primary provider is throttled or unavailable ('gemini', 'bedrock', 'anthropic', or 'openai') | `string` | `"gemini"` | no |
-| <a name="input_llm_primary_model"></a> [llm_primary_model](#input\_llm_primary_model) | Optional override for the primary LLM model ID. When empty (''), defaults to the CLAUDE_MODEL secret in AWS Secrets Manager. | `string` | `""` | no |
+| <a name="input_llm_fallback_model"></a> [llm_fallback_model](#input\_llm_fallback_model) | Optional fallback LLM model ID (e.g., 'global.openai.gpt-6.1-sol', 'eu.anthropic.claude-sonnet-5-5', or 'gemini-3.5-flash'). Defaults to '' when llm_fallback_provider = 'none'. | `string` | `""` | no |
+| <a name="input_llm_fallback_provider"></a> [llm_fallback_provider](#input\_llm_fallback_provider) | Optional fallback LLM provider invoked automatically when the primary provider is throttled or unavailable ('none', 'bedrock', 'openai', 'gemini', or 'anthropic'). Defaults to 'none' to prevent routing prompts outside your primary provider unless explicitly configured. | `string` | `"none"` | no |
+| <a name="input_llm_primary_model"></a> [llm_primary_model](#input\_llm_primary_model) | Optional override for the primary LLM model ID. When empty (''), defaults to the CLAUDE_MODEL secret in AWS Secrets Manager ('global.anthropic.claude-sonnet-5-5' by default; can be set to regional inference profiles such as 'us.anthropic.claude-sonnet-5-5' to keep data within US/Canada regions or 'eu.anthropic.claude-sonnet-5-5' to keep data within EU regions). | `string` | `""` | no |
 | <a name="input_llm_primary_provider"></a> [llm_primary_provider](#input\_llm_primary_provider) | Primary LLM provider for the orchestrator ('bedrock', 'gemini', 'anthropic', or 'openai') | `string` | `"bedrock"` | no |
 | <a name="input_max_token_budget"></a> [max_token_budget](#input\_max_token_budget) | Maximum total token budget (input + output) per incident investigation before triggering a graceful circuit breaker | `number` | `32000` | no |
 | <a name="input_max_tool_iterations"></a> [max_tool_iterations](#input\_max_tool_iterations) | Maximum number of LLM reasoning/tool steps per investigation session | `number` | `12` | no |
@@ -218,9 +236,12 @@ After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_A
 | <a name="input_public_subnet_cidrs"></a> [public_subnet_cidrs](#input\_public_subnet_cidrs) | Public subnet CIDR blocks (used when create_vpc = true and cluster_arn is empty) | `list(string)` | `["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]` | no |
 | <a name="input_region"></a> [region](#input\_region) | Target AWS region | `string` | `"eu-west-3"` | no |
 | <a name="input_ses_enable_agent"></a> [ses_enable_agent](#input\_ses_enable_agent) | Whether to provision the scoped IAM role serenity-agent-ses when enable_ses = true | `bool` | `true` | no |
-| <a name="input_ses_enable_dedicated_ip_pool"></a> [ses_enable_dedicated_ip_pool](#input\_ses_enable_dedicated_ip_pool) | Whether to provision an AWS SES v2 Managed Dedicated IP Pool when enable_ses = true (incurs monthly AWS dedicated IP charges) | `bool` | `true` | no |
+| <a name="input_ses_enable_dedicated_ip_pool"></a> [ses_enable_dedicated_ip_pool](#input\_ses_enable_dedicated_ip_pool) | Whether to provision an AWS SES v2 Managed Dedicated IP Pool when enable_ses = true (disabled by default to avoid monthly AWS dedicated IP charges; set to true when dedicated IPs are required) | `bool` | `false` | no |
 | <a name="input_ses_name_prefix"></a> [ses_name_prefix](#input\_ses_name_prefix) | Prefix applied to all created AWS SES, SNS, SQS, and Lambda resources (defaults to <project_name>-<environment>) | `string` | `""` | no |
-| <a name="input_single_nat_gateway"></a> [single_nat_gateway](#input\_single_nat_gateway) | When true, provisions a single shared NAT Gateway across all AZs. When false, provisions one NAT Gateway per public subnet. | `bool` | `false` | no |
+| <a name="input_single_nat_gateway"></a> [single_nat_gateway](#input\_single_nat_gateway) | When true (default for cost efficiency), provisions a single shared NAT Gateway across all AZs (~$32/mo instead of ~$96/mo). Set to false for multi-AZ NAT high availability. | `bool` | `true` | no |
+| <a name="input_slack_allow_direct_messages"></a> [slack_allow_direct_messages](#input\_slack_allow_direct_messages) | Whether Serenity-Bot responds to 1-on-1 Direct Messages (IM). When slack_allowed_user_ids is set, only listed users can DM the bot. | `bool` | `true` | no |
+| <a name="input_slack_allowed_channel_ids"></a> [slack_allowed_channel_ids](#input\_slack_allowed_channel_ids) | Optional list of allowed Slack channel IDs (e.g., ['C0123456789']) where Serenity-Bot is permitted to respond to mentions and alerts. When non-empty, messages in other channels are ignored. | `list(string)` | `[]` | no |
+| <a name="input_slack_allowed_user_ids"></a> [slack_allowed_user_ids](#input\_slack_allowed_user_ids) | Optional list of allowed Slack user IDs (e.g., ['U0123456789']) permitted to interact with Serenity-Bot (DMs, mentions, and HITL approvals). When non-empty, unauthorized users are rejected. | `list(string)` | `[]` | no |
 | <a name="input_subnet_ids"></a> [subnet_ids](#input\_subnet_ids) | Existing private subnet IDs for Serenity-Bot ECS tasks (required when cluster_arn is provided or when create_vpc = false) | `list(string)` | `[]` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags applied to all created resources | `map(string)` | `{}` | no |
 | <a name="input_vpc_cidr"></a> [vpc_cidr](#input\_vpc_cidr) | CIDR block for the created VPC (used when create_vpc = true and cluster_arn is empty) | `string` | `"10.0.0.0/16"` | no |
@@ -243,6 +264,7 @@ After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_A
 | <a name="output_bot_service_name"></a> [bot_service_name](#output\_bot_service_name) | Name of the deployed Serenity-Bot ECS service |
 | <a name="output_bot_tasks_iam_role_arn"></a> [bot_tasks_iam_role_arn](#output\_bot_tasks_iam_role_arn) | ARN of the Serenity-Bot ECS task IAM role |
 | <a name="output_bot_vpc_id"></a> [bot_vpc_id](#output\_bot_vpc_id) | VPC ID used by Serenity-Bot (null when enable_bot = false or using an external cluster_arn) |
+| <a name="output_dashboard_api_role_arn"></a> [dashboard_api_role_arn](#output\_dashboard_api_role_arn) | IAM Role ARN of the Web Dashboard Live API Lambda (null when enable_core = false or enable_dashboard = false) |
 | <a name="output_dashboard_cloudfront_id"></a> [dashboard_cloudfront_id](#output\_dashboard_cloudfront_id) | CloudFront Distribution ID for the Web Dashboard |
 | <a name="output_dashboard_s3_bucket_name"></a> [dashboard_s3_bucket_name](#output\_dashboard_s3_bucket_name) | Private S3 bucket name hosting the Web Dashboard |
 | <a name="output_dashboard_url"></a> [dashboard_url](#output\_dashboard_url) | HTTPS URL of the Serenity-Ops Web Dashboard (CloudFront) |
@@ -252,6 +274,7 @@ After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_A
 | <a name="output_ses_configuration_set"></a> [ses_configuration_set](#output\_ses_configuration_set) | Name of the SES v2 configuration set (when enable_ses = true) |
 | <a name="output_ses_dedicated_pool_name"></a> [ses_dedicated_pool_name](#output\_ses_dedicated_pool_name) | Name of the SES managed dedicated IP pool (null when disabled) |
 | <a name="output_ses_sns_topic_arn"></a> [ses_sns_topic_arn](#output\_ses_sns_topic_arn) | ARN of the SNS topic receiving SES sending reports |
+| <a name="output_ses_sqs_dlq_arn"></a> [ses_sqs_dlq_arn](#output\_ses_sqs_dlq_arn) | ARN of the Dead-Letter Queue (DLQ) for failed SES sending reports |
 | <a name="output_ses_sqs_queue_arn"></a> [ses_sqs_queue_arn](#output\_ses_sqs_queue_arn) | ARN of the SQS queue buffering SES sending reports |
 <!-- END_TF_DOCS -->
 

@@ -97,7 +97,7 @@ def record_incident(
         "action": "none",
         "target": "none",
         "status": "COMPLETED",
-        "details": "Investigation terminée sans action d'écriture requise."
+        "details": "Investigation completed with no write action required."
     }
 
     item = {
@@ -207,3 +207,64 @@ def record_prerequisites_status(report: dict) -> bool:
     except Exception as exc:
         logger.warning("Failed to record prerequisites status in %s: %s", TABLE_NAME, exc)
         return False
+
+
+def persist_pending_action(action_record: dict) -> bool:
+    """Persists a pending Human-in-the-Loop action in DynamoDB so it survives ECS task restarts."""
+    table = _get_table()
+    if not table:
+        return False
+
+    action_id = action_record["action_id"]
+    ttl_epoch = int(action_record.get("created_at", datetime.now(timezone.utc).timestamp())) + 3600
+    item = {
+        "PK": "SERENITY#PENDING_ACTIONS",
+        "SK": f"ACTION#{action_id}",
+        "action_id": action_id,
+        "agent": action_record["agent"],
+        "action": action_record["action"],
+        "target": action_record["target"],
+        "details": action_record["details"],
+        "incident_id": action_record.get("incident_id") or "",
+        "role_arn": action_record.get("role_arn") or "",
+        "action_params": action_record.get("action_params") or {},
+        "status": "PENDING_APPROVAL",
+        "created_at": str(action_record.get("created_at", "")),
+        "ttl": ttl_epoch,
+    }
+    try:
+        table.put_item(Item=item)
+        return True
+    except Exception as exc:
+        logger.warning("Failed to persist pending action %s in DynamoDB: %s", action_id, exc)
+        return False
+
+
+def pop_persisted_pending_action(action_id: str) -> dict | None:
+    """Atomically fetches and deletes a persisted pending action from DynamoDB."""
+    table = _get_table()
+    if not table:
+        return None
+
+    try:
+        resp = table.delete_item(
+            Key={"PK": "SERENITY#PENDING_ACTIONS", "SK": f"ACTION#{action_id}"},
+            ReturnValues="ALL_OLD",
+        )
+        attrs = resp.get("Attributes")
+        if not attrs:
+            return None
+        return {
+            "action_id": attrs["action_id"],
+            "agent": attrs["agent"],
+            "action": attrs["action"],
+            "target": attrs["target"],
+            "details": attrs["details"],
+            "incident_id": attrs.get("incident_id") or None,
+            "role_arn": attrs.get("role_arn") or "",
+            "action_params": attrs.get("action_params") or {},
+            "created_at": float(attrs.get("created_at") or 0.0),
+        }
+    except Exception as exc:
+        logger.warning("Failed to pop pending action %s from DynamoDB: %s", action_id, exc)
+        return None

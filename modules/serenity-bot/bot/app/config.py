@@ -17,12 +17,21 @@ class Settings:
     health_port: int = int(os.getenv("HEALTH_PORT", "8000"))
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
-    # Slack Credentials
+    # Slack Credentials & Access Control
     slack_bot_token: str = os.getenv("SLACK_BOT_TOKEN", "")
     slack_app_token: str = os.getenv("SLACK_APP_TOKEN", "")
+    slack_allowed_channel_ids: set[str] = field(
+        default_factory=lambda: {
+            c.strip().lstrip("#") for c in os.getenv("SLACK_ALLOWED_CHANNEL_IDS", "").split(",") if c.strip()
+        }
+    )
+    slack_allowed_user_ids: set[str] = field(
+        default_factory=lambda: {u.strip() for u in os.getenv("SLACK_ALLOWED_USER_IDS", "").split(",") if u.strip()}
+    )
+    slack_allow_direct_messages: bool = _as_bool(os.getenv("SLACK_ALLOW_DIRECT_MESSAGES"), default=True)
 
     # LLM Settings (Unified Multi-Provider Routing with AWS Bedrock default & Fallback)
-    claude_model: str = os.getenv("CLAUDE_MODEL", "global.anthropic.claude-sonnet-4-6")
+    claude_model: str = os.getenv("CLAUDE_MODEL", "global.anthropic.claude-sonnet-5-5")
     gemini_api_key: str = os.getenv("GEMINI_APIKEY", "")
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
     gemini_fallback_model: str = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.8-flash")
@@ -31,7 +40,7 @@ class Settings:
 
     llm_primary_provider: str = os.getenv("LLM_PRIMARY_PROVIDER", "bedrock")
     llm_primary_model: str = os.getenv("LLM_PRIMARY_MODEL", "")
-    llm_fallback_provider: str = os.getenv("LLM_FALLBACK_PROVIDER", "gemini")
+    llm_fallback_provider: str = os.getenv("LLM_FALLBACK_PROVIDER", "none")
     llm_fallback_model: str = os.getenv("LLM_FALLBACK_MODEL", "")
 
     # Agentic Guardrails, Token Budget & Circuit Breaker
@@ -84,7 +93,12 @@ class Settings:
     def effective_fallback_model(self) -> str:
         if self.llm_fallback_model and self.llm_fallback_model.strip():
             return self.llm_fallback_model.strip()
-        return self.gemini_model
+        prov = (self.llm_fallback_provider or "").strip().lower()
+        if prov in ("", "none", "disabled", "off", "false"):
+            return ""
+        if prov in ("gemini", "google", "google_genai"):
+            return self.gemini_model
+        return ""
 
     @property
     def mcp_servers_config(self) -> dict[str, Any]:

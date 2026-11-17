@@ -181,3 +181,25 @@ def test_orchestrator_failover_to_fallback_provider(monkeypatch):
     assert "Degraded Mode" in output
     assert "gemini/gemini-3.5-flash" in output
     assert ":mag: *RDS — CPU spike resolved*" in output
+
+
+def test_slack_access_control_allowlists(monkeypatch):
+    from app.main import _is_channel_allowed, _is_user_allowed
+
+    # Empty allowlist permits all by default
+    monkeypatch.setattr(settings, "slack_allowed_channel_ids", set())
+    monkeypatch.setattr(settings, "slack_allowed_user_ids", set())
+    assert _is_channel_allowed("C_ANY") is True
+    assert _is_user_allowed("U_ANY") is True
+
+    # Non-empty channel allowlist restricts to listed channels only
+    monkeypatch.setattr(settings, "slack_allowed_channel_ids", {"C_OPS_01", "C_ALERTS_02"})
+    assert _is_channel_allowed("C_OPS_01") is True
+    assert _is_channel_allowed("C_RANDOM") is False
+    assert _is_channel_allowed(None) is False
+
+    # Non-empty user allowlist restricts to listed users only
+    monkeypatch.setattr(settings, "slack_allowed_user_ids", {"U_SRE_ADMIN"})
+    assert _is_user_allowed("U_SRE_ADMIN") is True
+    assert _is_user_allowed("U_GUEST") is False
+    assert _is_user_allowed(None) is False

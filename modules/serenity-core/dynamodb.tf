@@ -45,6 +45,7 @@ resource "aws_dynamodb_table_item" "core_registration" {
     name        = { S = "serenity-core" }
     status      = { S = "ACTIVE" }
     environment = { S = var.environment }
-    version     = { S = "1.0.0" }
+    region      = { S = var.region }
+    version     = { S = "0.1.2" }
   })
 }

@@ -85,7 +85,7 @@ variable "enable_dashboard" {
 }
 
 variable "dashboard_allowed_ips" {
-  description = "Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (empty disables IP filtering)"
+  description = "Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (fail-closed by default: empty [] blocks all public access; specify your VPN/office CIDRs or explicitly set ['0.0.0.0/0'] to open publicly)"
   type        = list(string)
   default     = []
 }
@@ -94,6 +94,12 @@ variable "dashboard_price_class" {
   description = "CloudFront price class for the Web Dashboard (PriceClass_100, PriceClass_200, PriceClass_All)"
   type        = string
   default     = "PriceClass_100"
+}
+
+variable "dashboard_s3_force_destroy" {
+  description = "Whether to allow force-destroying the S3 bucket hosting the Web Dashboard even when non-empty (defaults to false for production safety)"
+  type        = bool
+  default     = false
 }
 
 # ------------------------------------------------------------------------------
@@ -137,9 +143,9 @@ variable "bot_initial_secrets" {
 }
 
 variable "bot_image" {
-  description = "Container image URI used when bot_create_ecr_repository = false. Defaults to the official pre-built GHCR image (:stable)."
+  description = "Container image URI used when bot_create_ecr_repository = false. Defaults to the pinned SemVer GHCR release image (:0.1.2)."
   type        = string
-  default     = "ghcr.io/e-serenity/serenity-bot:stable"
+  default     = "ghcr.io/e-serenity/serenity-bot:0.1.2"
 }
 
 variable "bot_create_ecr_repository" {
@@ -152,6 +158,30 @@ variable "bot_ecr_image_tag" {
   description = "Image tag pulled from the private ECR repository when bot_create_ecr_repository = true (defaults to var.environment when empty)"
   type        = string
   default     = ""
+}
+
+variable "bot_ecr_image_tag_mutability" {
+  description = "Tag mutability setting for the private ECR repository ('IMMUTABLE' or 'MUTABLE'). Defaults to 'IMMUTABLE' to prevent image tag tampering."
+  type        = string
+  default     = "IMMUTABLE"
+}
+
+variable "bot_ecr_force_delete" {
+  description = "Whether to allow deleting the private ECR repository even when it contains images (defaults to false for production safety)"
+  type        = bool
+  default     = false
+}
+
+variable "bot_enable_execute_command" {
+  description = "Whether to enable Amazon ECS Exec on the Serenity-Bot task (defaults to false for least-privilege container hardening)"
+  type        = bool
+  default     = false
+}
+
+variable "bot_readonly_root_filesystem" {
+  description = "Whether to mount the container root filesystem as read-only (defaults to true with a /tmp tmpfs mount)"
+  type        = bool
+  default     = true
 }
 
 variable "bot_cpu" {
@@ -231,9 +261,9 @@ variable "enable_nat_gateway" {
 }
 
 variable "single_nat_gateway" {
-  description = "When true, provisions a single shared NAT Gateway across all AZs. When false, provisions one NAT Gateway per public subnet."
+  description = "When true (default for cost efficiency), provisions a single shared NAT Gateway across all AZs (~$32/mo instead of ~$96/mo). Set to false for multi-AZ NAT high availability."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "existing_vpc_id" {
@@ -260,9 +290,9 @@ variable "enable_s3_endpoint" {
 }
 
 variable "enable_bedrock_endpoint" {
-  description = "Enable AWS Bedrock Runtime Interface VPC Endpoint (used when cluster_arn is empty)"
+  description = "Enable AWS Bedrock Runtime Interface VPC Endpoint (~$7.20/mo per AZ, used when cluster_arn is empty). Disabled by default to minimize idle costs when NAT Gateway is enabled."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "ecs_cluster_name" {
@@ -272,9 +302,9 @@ variable "ecs_cluster_name" {
 }
 
 variable "ecs_container_insights" {
-  description = "ECS Container Insights mode (enhanced, enabled, or disabled)"
+  description = "ECS Container Insights mode (enhanced, enabled, or disabled). Defaults to 'enabled' to avoid extra per-metric Enhanced Container Insights charges."
   type        = string
-  default     = "enhanced"
+  default     = "enabled"
 }
 
 variable "ecs_allowed_instance_types" {
@@ -348,21 +378,21 @@ variable "llm_primary_provider" {
 }
 
 variable "llm_primary_model" {
-  description = "Optional override for the primary LLM model ID. When empty (''), defaults to the CLAUDE_MODEL secret in AWS Secrets Manager."
+  description = "Optional override for the primary LLM model ID. When empty (''), defaults to the CLAUDE_MODEL secret in AWS Secrets Manager ('global.anthropic.claude-sonnet-5-5' by default; can be set to regional inference profiles such as 'us.anthropic.claude-sonnet-5-5' to keep data within US/Canada regions or 'eu.anthropic.claude-sonnet-5-5' to keep data within EU regions)."
   type        = string
   default     = ""
 }
 
 variable "llm_fallback_provider" {
-  description = "Fallback LLM provider invoked automatically when the primary provider is throttled or unavailable ('gemini', 'bedrock', 'anthropic', or 'openai')"
+  description = "Optional fallback LLM provider invoked automatically when the primary provider is throttled or unavailable ('none', 'bedrock', 'openai', 'gemini', or 'anthropic'). Defaults to 'none' to prevent routing prompts outside your primary provider unless explicitly configured."
   type        = string
-  default     = "gemini"
+  default     = "none"
 }
 
 variable "llm_fallback_model" {
-  description = "Fallback LLM model ID (defaults to 'gemini-3.5-flash' when llm_fallback_provider = 'gemini')"
+  description = "Optional fallback LLM model ID (e.g., 'global.openai.gpt-6.1-sol', 'eu.anthropic.claude-sonnet-5-5', or 'gemini-3.5-flash'). Defaults to '' when llm_fallback_provider = 'none'."
   type        = string
-  default     = "gemini-3.5-flash"
+  default     = ""
 }
 
 variable "max_token_budget" {
@@ -462,7 +492,29 @@ variable "ses_enable_agent" {
 }
 
 variable "ses_enable_dedicated_ip_pool" {
-  description = "Whether to provision an AWS SES v2 Managed Dedicated IP Pool when enable_ses = true (incurs monthly AWS dedicated IP charges)"
+  description = "Whether to provision an AWS SES v2 Managed Dedicated IP Pool when enable_ses = true (disabled by default to avoid monthly AWS dedicated IP charges; set to true when dedicated IPs are required)"
+  type        = bool
+  default     = false
+}
+
+# ------------------------------------------------------------------------------
+# Serenity-Bot (Slack Access Control — Channel & User Allowlists)
+# ------------------------------------------------------------------------------
+
+variable "slack_allowed_channel_ids" {
+  description = "Optional list of allowed Slack channel IDs (e.g., ['C0123456789']) where Serenity-Bot is permitted to respond to mentions and alerts. When non-empty, messages in other channels are ignored."
+  type        = list(string)
+  default     = []
+}
+
+variable "slack_allowed_user_ids" {
+  description = "Optional list of allowed Slack user IDs (e.g., ['U0123456789']) permitted to interact with Serenity-Bot (DMs, mentions, and HITL approvals). When non-empty, unauthorized users are rejected."
+  type        = list(string)
+  default     = []
+}
+
+variable "slack_allow_direct_messages" {
+  description = "Whether Serenity-Bot responds to 1-on-1 Direct Messages (IM). When slack_allowed_user_ids is set, only listed users can DM the bot."
   type        = bool
   default     = true
 }

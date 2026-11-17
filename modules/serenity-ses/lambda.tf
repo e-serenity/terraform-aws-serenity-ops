@@ -1,7 +1,7 @@
 data "archive_file" "sending_reports_lambda" {
   type        = "zip"
   source_dir  = "${path.module}/lambda/store-reports"
-  output_path = "${path.module}/.terraform/tmp-${var.name_prefix}-ses-sending-reports.zip"
+  output_path = "${path.module}/lambda/store-reports.zip"
 }
 
 data "aws_iam_policy_document" "sending_reports_lambda_assume" {

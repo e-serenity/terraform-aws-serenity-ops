@@ -24,9 +24,10 @@ module "serenity_core" {
   dynamodb_hub_table_name = var.dynamodb_hub_table_name
   dynamodb_enable_pitr    = var.dynamodb_enable_pitr
 
-  enable_dashboard      = var.enable_dashboard
-  dashboard_allowed_ips = var.dashboard_allowed_ips
-  dashboard_price_class = var.dashboard_price_class
+  enable_dashboard           = var.enable_dashboard
+  dashboard_allowed_ips      = var.dashboard_allowed_ips
+  dashboard_price_class      = var.dashboard_price_class
+  dashboard_s3_force_destroy = var.dashboard_s3_force_destroy
 }
 
 module "serenity_bot" {
@@ -42,14 +43,18 @@ module "serenity_bot" {
   dynamodb_table_name = local.resolved_hub_table_name
   tags                = var.tags
 
-  create_secrets        = var.bot_create_secrets
-  existing_secret_arn   = var.bot_existing_secret_arn
-  initial_secrets       = var.bot_initial_secrets
-  image                 = var.bot_image
-  create_ecr_repository = var.bot_create_ecr_repository
-  ecr_image_tag         = var.bot_ecr_image_tag
-  cpu                   = var.bot_cpu
-  memory                = var.bot_memory
+  create_secrets           = var.bot_create_secrets
+  existing_secret_arn      = var.bot_existing_secret_arn
+  initial_secrets          = var.bot_initial_secrets
+  image                    = var.bot_image
+  create_ecr_repository    = var.bot_create_ecr_repository
+  ecr_image_tag            = var.bot_ecr_image_tag
+  ecr_image_tag_mutability = var.bot_ecr_image_tag_mutability
+  ecr_force_delete         = var.bot_ecr_force_delete
+  enable_execute_command   = var.bot_enable_execute_command
+  readonly_root_filesystem = var.bot_readonly_root_filesystem
+  cpu                      = var.bot_cpu
+  memory                   = var.bot_memory
 
   cluster_arn            = var.cluster_arn
   capacity_provider_name = var.capacity_provider_name
@@ -97,6 +102,10 @@ module "serenity_bot" {
   platform_alarms_memory_threshold    = var.platform_alarms_memory_threshold
   platform_alarms_error_log_threshold = var.platform_alarms_error_log_threshold
 
+  slack_allowed_channel_ids   = var.slack_allowed_channel_ids
+  slack_allowed_user_ids      = var.slack_allowed_user_ids
+  slack_allow_direct_messages = var.slack_allow_direct_messages
+
   application_context = var.application_context
 }
 
@@ -106,10 +115,14 @@ module "serenity_ses" {
 
   depends_on = [module.serenity_core]
 
-  name_prefix              = local.ses_name_prefix
-  environment              = var.environment
-  serenity_ops_table_name  = local.resolved_hub_table_name
-  enable_serenity_agent    = var.ses_enable_agent
+  name_prefix             = local.ses_name_prefix
+  environment             = var.environment
+  serenity_ops_table_name = local.resolved_hub_table_name
+  enable_serenity_agent   = var.ses_enable_agent
+  agent_trusted_principal_arns = concat(
+    local.enable_bot ? [module.serenity_bot[0].tasks_iam_role_arn] : [],
+    local.enable_core && var.enable_dashboard ? [module.serenity_core[0].dashboard_api_role_arn] : [],
+  )
   enable_dedicated_ip_pool = var.ses_enable_dedicated_ip_pool
   tags                     = var.tags
 }

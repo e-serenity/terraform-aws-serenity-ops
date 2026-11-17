@@ -54,8 +54,9 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_dashboard_allowed_ips"></a> [dashboard_allowed_ips](#input\_dashboard_allowed_ips) | Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (empty disables IP filtering) | `list(string)` | `[]` | no |
+| <a name="input_dashboard_allowed_ips"></a> [dashboard_allowed_ips](#input\_dashboard_allowed_ips) | Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (fail-closed by default: empty [] blocks all public access; specify your VPN/office CIDRs or explicitly set ['0.0.0.0/0'] to open publicly) | `list(string)` | `[]` | no |
 | <a name="input_dashboard_price_class"></a> [dashboard_price_class](#input\_dashboard_price_class) | CloudFront price class for the Web Dashboard (PriceClass_100, PriceClass_200, PriceClass_All) | `string` | `"PriceClass_100"` | no |
+| <a name="input_dashboard_s3_force_destroy"></a> [dashboard_s3_force_destroy](#input\_dashboard_s3_force_destroy) | Whether to allow force-destroying the S3 bucket hosting the Web Dashboard even when non-empty (defaults to false for production safety) | `bool` | `false` | no |
 | <a name="input_dynamodb_enable_pitr"></a> [dynamodb_enable_pitr](#input\_dynamodb_enable_pitr) | Enable Point-in-Time Recovery (PITR) on the DynamoDB Hub table | `bool` | `false` | no |
 | <a name="input_dynamodb_hub_table_name"></a> [dynamodb_hub_table_name](#input\_dynamodb_hub_table_name) | Custom DynamoDB Hub table name (defaults to <project_name>-<environment>-hub) | `string` | `""` | no |
 | <a name="input_enable_dashboard"></a> [enable_dashboard](#input\_enable_dashboard) | Enable Serenity-Ops Web Dashboard (Private S3 + CloudFront OAC + Live API Lambda) | `bool` | `true` | no |
@@ -69,6 +70,7 @@ No modules.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_dashboard_api_role_arn"></a> [dashboard_api_role_arn](#output\_dashboard_api_role_arn) | IAM Role ARN of the Web Dashboard Live API Lambda (null when enable_dashboard = false) |
 | <a name="output_dashboard_cloudfront_id"></a> [dashboard_cloudfront_id](#output\_dashboard_cloudfront_id) | CloudFront Distribution ID for the Web Dashboard |
 | <a name="output_dashboard_s3_bucket_name"></a> [dashboard_s3_bucket_name](#output\_dashboard_s3_bucket_name) | Private S3 bucket name hosting the Web Dashboard |
 | <a name="output_dashboard_url"></a> [dashboard_url](#output\_dashboard_url) | HTTPS URL of the Serenity-Ops Web Dashboard (CloudFront) |

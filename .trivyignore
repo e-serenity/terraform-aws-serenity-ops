@@ -1,0 +1,39 @@
+# ==============================================================================
+# Documented Architecture & Security Exceptions for Trivy IaC Scanner
+# ==============================================================================
+
+# Outbound HTTPS (443 / all egress) is required by ECS tasks to connect to
+# Slack Socket Mode (wss://wss-primary.slack.com) and opt-in GitLab/GitHub/Datadog APIs.
+AVD-AWS-0104
+
+# AWS Managed SSE (AES256 / SQS-SSE / DynamoDB default KMS) is used by default
+# instead of customer-managed KMS keys (CMK) to avoid $1/mo/key fixed FinOps overhead.
+AVD-AWS-0023
+AVD-AWS-0024
+AVD-AWS-0025
+AVD-AWS-0033
+AVD-AWS-0065
+AVD-AWS-0088
+AVD-AWS-0089
+AVD-AWS-0090
+AVD-AWS-0093
+AVD-AWS-0094
+AVD-AWS-0095
+AVD-AWS-0132
+AVD-AWS-0135
+AVD-AWS-0136
+
+# CloudWatch Describe*, Logs Describe*/FilterLogEvents, and SES Get*/PutSuppressedDestination
+# require Resource = "*" in AWS IAM as those APIs do not support resource-level ARN scoping.
+AVD-AWS-0057
+
+# CloudFront and S3 access logging buckets are optional to keep the Core Hub at $0.00/hr idle cost.
+AVD-AWS-0010
+AVD-AWS-0011
+AVD-AWS-0071
+AVD-AWS-0086
+AVD-AWS-0087
+AVD-AWS-0091
+
+# VPC Flow Logs are optional in default self-contained mode to avoid extra CloudWatch Logs ingestion costs.
+AVD-AWS-0178

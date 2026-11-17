@@ -22,3 +22,8 @@ output "sqs_queue_arn" {
   description = "ARN of the SQS queue buffering sending reports"
   value       = aws_sqs_queue.sending_reports.arn
 }
+
+output "sqs_dlq_arn" {
+  description = "ARN of the Dead-Letter Queue (DLQ) for failed SES sending reports"
+  value       = aws_sqs_queue.sending_reports_dlq.arn
+}

@@ -47,7 +47,7 @@ variable "enable_dashboard" {
 }
 
 variable "dashboard_allowed_ips" {
-  description = "Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (empty disables IP filtering)"
+  description = "Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (fail-closed by default: empty [] blocks all public access; specify your VPN/office CIDRs or explicitly set ['0.0.0.0/0'] to open publicly)"
   type        = list(string)
   default     = []
 }
@@ -56,4 +56,10 @@ variable "dashboard_price_class" {
   description = "CloudFront price class for the Web Dashboard (PriceClass_100, PriceClass_200, PriceClass_All)"
   type        = string
   default     = "PriceClass_100"
+}
+
+variable "dashboard_s3_force_destroy" {
+  description = "Whether to allow force-destroying the S3 bucket hosting the Web Dashboard even when non-empty (defaults to false for production safety)"
+  type        = bool
+  default     = false
 }

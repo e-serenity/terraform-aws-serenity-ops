@@ -9,10 +9,15 @@ resource "aws_dynamodb_table_item" "module_registration" {
     SK             = { S = "MOD#serenity-ses" }
     name           = { S = "serenity-ses" }
     status         = { S = "ACTIVE" }
-    version        = { S = "2.0.0" }
+    environment    = { S = var.environment }
+    version        = { S = "0.1.2" }
     agent_role_arn = { S = try(aws_iam_role.serenity_agent_ses[0].arn, "") }
     updated_at     = { S = timestamp() }
   })
+
+  lifecycle {
+    ignore_changes = [item]
+  }
 }
 
 resource "aws_dynamodb_table_item" "ses_state_summary" {

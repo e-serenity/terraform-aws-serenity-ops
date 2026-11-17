@@ -9,8 +9,10 @@ data "aws_iam_policy_document" "agent_assume_role" {
     actions = ["sts:AssumeRole"]
 
     principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+      type = "AWS"
+      identifiers = length(var.agent_trusted_principal_arns) > 0 ? var.agent_trusted_principal_arns : [
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+      ]
     }
   }
 }

@@ -9,7 +9,7 @@ module "secrets_manager" {
   recovery_window_in_days = 7
 
   secret_string = jsonencode(merge({
-    CLAUDE_MODEL       = "global.anthropic.claude-sonnet-4-6"
+    CLAUDE_MODEL       = "global.anthropic.claude-sonnet-5-5"
     GEMINI_APIKEY      = "to-fill-manually"
     SLACK_BOT_TOKEN    = "to-fill-manually"
     SLACK_APP_TOKEN    = "to-fill-manually"
@@ -23,6 +23,6 @@ module "secrets_manager" {
 
   tags = var.tags
   replica = var.region_backup != "" ? {
-    "${var.region_backup}" = {}
+    (var.region_backup) = {}
   } : {}
 }

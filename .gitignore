@@ -26,7 +26,8 @@ terraform.rc
 *.py[cod]
 *.egg-info/
 
-# OS & Logs
+# OS & Logs & Lambda build archives
 *.log
+*.zip
 .DS_Store
 *:Zone.Identifier
