@@ -70,6 +70,7 @@ No modules.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_dashboard_api_role_arn"></a> [dashboard_api_role_arn](#output\_dashboard_api_role_arn) | IAM Role ARN of the Web Dashboard Live API Lambda (null when enable_dashboard = false) |
 | <a name="output_dashboard_cloudfront_id"></a> [dashboard_cloudfront_id](#output\_dashboard_cloudfront_id) | CloudFront Distribution ID for the Web Dashboard |
 | <a name="output_dashboard_s3_bucket_name"></a> [dashboard_s3_bucket_name](#output\_dashboard_s3_bucket_name) | Private S3 bucket name hosting the Web Dashboard |
 | <a name="output_dashboard_url"></a> [dashboard_url](#output\_dashboard_url) | HTTPS URL of the Serenity-Ops Web Dashboard (CloudFront) |

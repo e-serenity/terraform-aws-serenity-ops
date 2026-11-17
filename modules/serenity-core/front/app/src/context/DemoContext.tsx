@@ -658,19 +658,30 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...prev,
       [incidentId]: 'APPROVED',
     }));
-    setCustomIncidents((prev) =>
-      prev.map((inc) =>
+    const applyApproved = (list: IncidentReport[]) =>
+      list.map((inc) =>
         inc.id === incidentId && inc.proposedAction
           ? {
               ...inc,
               proposedAction: {
                 ...inc.proposedAction,
-                status: 'APPROVED',
+                status: 'APPROVED' as const,
               },
             }
           : inc
-      )
-    );
+      );
+    setCustomIncidents(applyApproved);
+    setLiveIncidents(applyApproved);
+
+    if (isLiveMode) {
+      fetch('/api/actions/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ incidentId }),
+      })
+        .then(() => refreshLiveState())
+        .catch(() => {});
+    }
   };
 
   const rejectAction = (incidentId: string) => {
@@ -678,19 +689,30 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...prev,
       [incidentId]: 'REJECTED',
     }));
-    setCustomIncidents((prev) =>
-      prev.map((inc) =>
+    const applyRejected = (list: IncidentReport[]) =>
+      list.map((inc) =>
         inc.id === incidentId && inc.proposedAction
           ? {
               ...inc,
               proposedAction: {
                 ...inc.proposedAction,
-                status: 'REJECTED',
+                status: 'REJECTED' as const,
               },
             }
           : inc
-      )
-    );
+      );
+    setCustomIncidents(applyRejected);
+    setLiveIncidents(applyRejected);
+
+    if (isLiveMode) {
+      fetch('/api/actions/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ incidentId }),
+      })
+        .then(() => refreshLiveState())
+        .catch(() => {});
+    }
   };
 
   const applyEmailAction = (eventId: string) => {
@@ -698,6 +720,19 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...prev,
       [eventId]: 'APPLIED',
     }));
+    setLiveEmailEvents((prev) =>
+      prev.map((evt) => (evt.id === eventId ? { ...evt, actionStatus: 'APPLIED' } : evt))
+    );
+
+    if (isLiveMode) {
+      fetch('/api/actions/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId }),
+      })
+        .then(() => refreshLiveState())
+        .catch(() => {});
+    }
   };
 
   const resetDemo = () => {

@@ -23,6 +23,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
+LABEL org.opencontainers.image.source="https://github.com/e-serenity/terraform-aws-serenity-ops" \
+      org.opencontainers.image.description="Serenity-Bot — AI & CloudSecOps Incident Orchestrator for AWS (Serenity-Ops)" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
 ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     PYTHONPATH=/app \

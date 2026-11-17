@@ -115,11 +115,14 @@ module "serenity_ses" {
 
   depends_on = [module.serenity_core]
 
-  name_prefix                  = local.ses_name_prefix
-  environment                  = var.environment
-  serenity_ops_table_name      = local.resolved_hub_table_name
-  enable_serenity_agent        = var.ses_enable_agent
-  agent_trusted_principal_arns = local.enable_bot ? [module.serenity_bot[0].tasks_iam_role_arn] : []
-  enable_dedicated_ip_pool     = var.ses_enable_dedicated_ip_pool
-  tags                         = var.tags
+  name_prefix             = local.ses_name_prefix
+  environment             = var.environment
+  serenity_ops_table_name = local.resolved_hub_table_name
+  enable_serenity_agent   = var.ses_enable_agent
+  agent_trusted_principal_arns = concat(
+    local.enable_bot ? [module.serenity_bot[0].tasks_iam_role_arn] : [],
+    local.enable_core && var.enable_dashboard ? [module.serenity_core[0].dashboard_api_role_arn] : [],
+  )
+  enable_dedicated_ip_pool = var.ses_enable_dedicated_ip_pool
+  tags                     = var.tags
 }

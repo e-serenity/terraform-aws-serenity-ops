@@ -27,6 +27,11 @@ output "dashboard_s3_bucket_name" {
   value       = try(module.serenity_core[0].dashboard_s3_bucket_name, null)
 }
 
+output "dashboard_api_role_arn" {
+  description = "IAM Role ARN of the Web Dashboard Live API Lambda (null when enable_core = false or enable_dashboard = false)"
+  value       = try(module.serenity_core[0].dashboard_api_role_arn, null)
+}
+
 # ------------------------------------------------------------------------------
 # Serenity-Bot
 # ------------------------------------------------------------------------------

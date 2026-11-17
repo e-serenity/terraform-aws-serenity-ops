@@ -50,12 +50,24 @@ data "aws_iam_policy_document" "dashboard_api_permissions" {
         "dynamodb:GetItem",
         "dynamodb:PutItem",
         "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
       ]
       resources = [
         aws_dynamodb_table.hub[0].arn,
         "${aws_dynamodb_table.hub[0].arn}/index/*"
       ]
     }
+  }
+
+  statement {
+    sid    = "SubAgentRoleAssumption"
+    effect = "Allow"
+    actions = [
+      "sts:AssumeRole"
+    ]
+    resources = [
+      "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/*serenity-agent-*"
+    ]
   }
 
   statement {

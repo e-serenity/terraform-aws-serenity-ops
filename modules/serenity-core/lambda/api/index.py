@@ -14,8 +14,9 @@ RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "90"))
 
 dynamodb = boto3.resource("dynamodb", region_name=REGION)
 cw_client = boto3.client("cloudwatch", region_name=REGION)
+sts_client = boto3.client("sts", region_name=REGION)
 
-_EMAIL_RE = re.compile(r"\b([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b")
+_EMAIL_RE = re.compile(r"(?<![A-Za-z0-9._%+*-])([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b")
 _ARN_ACCOUNT_RE = re.compile(r"(arn:aws[a-zA-Z-]*:[a-zA-Z0-9-]+:[a-zA-Z0-9-]*:)(\d{12})(:)")
 _SECRET_PATTERNS = [
     (re.compile(r"\b(AKIA|ASIA)[0-9A-Z]{16}\b"), "[REDACTED_AWS_KEY]"),
@@ -272,4 +273,187 @@ def handler(event, context):
         table.put_item(Item=user_msg)
         return _resp(200, {"ok": True, "message": user_msg})
 
+    if raw_path in ("/api/actions/approve", "/api/actions/reject") and method == "POST":
+        table = dynamodb.Table(TABLE_NAME)
+        body = json.loads(event.get("body") or "{}")
+        decision = "APPROVED" if raw_path.endswith("/approve") else "REJECTED"
+        return _handle_action_decision(table, body, decision)
+
     return _resp(404, {"error": f"Unknown route {method} {raw_path}"})
+
+
+def _get_module_agent_role(table, agent_or_mod: str) -> str:
+    mod_items = _query_pk(table, "SERENITY#MODULES", limit=50)
+    target_mod = "serenity-ses" if "ses" in (agent_or_mod or "") else (
+        "serenity-cloudwatch" if "cw" in (agent_or_mod or "") or "cloudwatch" in (agent_or_mod or "") else agent_or_mod
+    )
+    for item in mod_items:
+        sk = item.get("SK", "")
+        name = item.get("name") or sk.replace("MOD#", "")
+        if item.get("status", "ACTIVE") == "ACTIVE" and name == target_mod:
+            return item.get("agent_role_arn", "")
+    return ""
+
+
+def _execute_subagent_action(role_arn: str, action_name: str, target: str, params: dict) -> str:
+    if not role_arn:
+        return "Marked approved in Hub (no scoped sub-agent IAM role ARN configured)."
+
+    creds = sts_client.assume_role(
+        RoleArn=role_arn,
+        RoleSessionName="serenity-web-hitl",
+        DurationSeconds=900,
+    )["Credentials"]
+    session = boto3.Session(
+        aws_access_key_id=creds["AccessKeyId"],
+        aws_secret_access_key=creds["SecretAccessKey"],
+        aws_session_token=creds["SessionToken"],
+        region_name=REGION,
+    )
+
+    if action_name in ("put_suppressed_destination", "ses_suppress") or "ses" in role_arn:
+        email = (params or {}).get("email") or target
+        reason = (params or {}).get("reason", "BOUNCE")
+        if reason not in ("BOUNCE", "COMPLAINT"):
+            reason = "BOUNCE"
+        ses_v2 = session.client("sesv2", region_name=REGION)
+        ses_v2.put_suppressed_destination(EmailAddress=email, Reason=reason)
+        return f"Address '{_mask_email(str(email))}' added to SES suppression list ({reason})."
+
+    if action_name == "put_metric_alarm" or "cw" in role_arn or "cloudwatch" in role_arn:
+        alarm_name = (params or {}).get("alarm_name") or target
+        metric_name = (params or {}).get("metric_name", "CPUUtilization")
+        namespace = (params or {}).get("namespace", "AWS/ECS")
+        threshold = float((params or {}).get("threshold", 85.0))
+        comparison_operator = (params or {}).get("comparison_operator", "GreaterThanOrEqualToThreshold")
+        evaluation_periods = int((params or {}).get("evaluation_periods", 1))
+        period_seconds = int((params or {}).get("period_seconds", 60))
+        statistic = (params or {}).get("statistic", "Average")
+        cw = session.client("cloudwatch", region_name=REGION)
+        cw.put_metric_alarm(
+            AlarmName=alarm_name,
+            MetricName=metric_name,
+            Namespace=namespace,
+            Threshold=threshold,
+            ComparisonOperator=comparison_operator,
+            EvaluationPeriods=evaluation_periods,
+            Period=period_seconds,
+            Statistic=statistic,
+            Tags=[{"Key": "ManagedBy", "Value": "serenity-ops"}],
+        )
+        return f"CloudWatch alarm '{alarm_name}' created on {namespace}/{metric_name}."
+
+    return f"Action '{action_name}' recorded as approved."
+
+
+def _handle_action_decision(table, body: dict, decision: str):
+    incident_id = (body.get("incidentId") or "").strip()
+    event_id = (body.get("eventId") or "").strip()
+    if not incident_id and not event_id:
+        return _resp(400, {"error": "incidentId or eventId is required"})
+
+    now_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    if event_id:
+        ses_items = _query_pk(table, "MOD#serenity-ses", limit=100)
+        target_item = next(
+            (it for it in ses_items if it.get("id") == event_id or it.get("SK") == event_id),
+            None,
+        )
+        if not target_item:
+            return _resp(404, {"error": f"SES event '{event_id}' not found"})
+
+        new_status = "APPLIED" if decision == "APPROVED" else "REJECTED"
+        exec_msg = ""
+        if decision == "APPROVED":
+            recipient = target_item.get("recipient", "")
+            evt_type = str(target_item.get("type", "BOUNCE")).upper()
+            reason = "COMPLAINT" if "COMPLAINT" in evt_type else "BOUNCE"
+            role_arn = _get_module_agent_role(table, "serenity-ses")
+            if role_arn and recipient and "@" in recipient and "***" not in recipient:
+                try:
+                    exec_msg = _execute_subagent_action(
+                        role_arn,
+                        "put_suppressed_destination",
+                        recipient,
+                        {"email": recipient, "reason": reason},
+                    )
+                except Exception as exc:
+                    return _resp(500, {"error": f"Sub-agent execution failed: {_redact_sensitive_text(str(exc))}"})
+
+        table.update_item(
+            Key={"PK": target_item["PK"], "SK": target_item["SK"]},
+            UpdateExpression="SET actionStatus = :st, updated_at = :now",
+            ExpressionAttributeValues={":st": new_status, ":now": now_iso},
+        )
+        return _resp(200, {"ok": True, "eventId": event_id, "status": new_status, "result": exec_msg})
+
+    ops_items = _query_pk(table, "SERENITY#OPS", limit=100) + _query_pk(table, "SERENITY#INCIDENTS", limit=100)
+    inc_item = next(
+        (
+            it
+            for it in ops_items
+            if it.get("id") == incident_id
+            or it.get("incident_id") == incident_id
+            or it.get("SK") == incident_id
+        ),
+        None,
+    )
+
+    pending_items = _query_pk(table, "SERENITY#PENDING_ACTIONS", limit=100)
+    pending_item = next(
+        (
+            it
+            for it in pending_items
+            if it.get("incident_id") == incident_id or it.get("action_id") == incident_id
+        ),
+        None,
+    )
+
+    if not inc_item and not pending_item:
+        return _resp(404, {"error": f"Incident or pending action '{incident_id}' not found"})
+
+    exec_result = ""
+    if decision == "APPROVED":
+        proposed = (inc_item or {}).get("proposed_action") or (inc_item or {}).get("proposedAction") or {}
+        agent_name = (pending_item or {}).get("agent") or proposed.get("agent", "")
+        action_name = (pending_item or {}).get("action") or proposed.get("action", "")
+        target = (pending_item or {}).get("target") or proposed.get("target", "")
+        params = (pending_item or {}).get("action_params") or {}
+        role_arn = (pending_item or {}).get("role_arn") or _get_module_agent_role(table, agent_name)
+        if role_arn and action_name:
+            try:
+                exec_result = _execute_subagent_action(role_arn, action_name, target, params)
+            except Exception as exc:
+                return _resp(500, {"error": f"Sub-agent execution failed: {_redact_sensitive_text(str(exc))}"})
+
+    if pending_item:
+        try:
+            table.delete_item(Key={"PK": pending_item["PK"], "SK": pending_item["SK"]})
+        except Exception:
+            pass
+
+    if inc_item:
+        prop_field = "proposedAction" if "proposedAction" in inc_item else "proposed_action"
+        current_prop = dict(inc_item.get(prop_field) or {})
+        current_prop["status"] = decision
+        current_prop["updated_at"] = now_iso
+        current_prop["executed_by"] = "Operator (Web Console)"
+        if exec_result:
+            current_prop["execution_result"] = exec_result
+
+        table.update_item(
+            Key={"PK": inc_item["PK"], "SK": inc_item["SK"]},
+            UpdateExpression=f"SET {prop_field} = :prop",
+            ExpressionAttributeValues={":prop": current_prop},
+        )
+
+    return _resp(
+        200,
+        {
+            "ok": True,
+            "incidentId": incident_id,
+            "status": decision,
+            "result": _redact_sensitive_text(exec_result),
+        },
+    )

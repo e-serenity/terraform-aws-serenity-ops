@@ -264,6 +264,7 @@ After `terraform apply`, populate your Slack tokens (`SLACK_BOT_TOKEN`, `SLACK_A
 | <a name="output_bot_service_name"></a> [bot_service_name](#output\_bot_service_name) | Name of the deployed Serenity-Bot ECS service |
 | <a name="output_bot_tasks_iam_role_arn"></a> [bot_tasks_iam_role_arn](#output\_bot_tasks_iam_role_arn) | ARN of the Serenity-Bot ECS task IAM role |
 | <a name="output_bot_vpc_id"></a> [bot_vpc_id](#output\_bot_vpc_id) | VPC ID used by Serenity-Bot (null when enable_bot = false or using an external cluster_arn) |
+| <a name="output_dashboard_api_role_arn"></a> [dashboard_api_role_arn](#output\_dashboard_api_role_arn) | IAM Role ARN of the Web Dashboard Live API Lambda (null when enable_core = false or enable_dashboard = false) |
 | <a name="output_dashboard_cloudfront_id"></a> [dashboard_cloudfront_id](#output\_dashboard_cloudfront_id) | CloudFront Distribution ID for the Web Dashboard |
 | <a name="output_dashboard_s3_bucket_name"></a> [dashboard_s3_bucket_name](#output\_dashboard_s3_bucket_name) | Private S3 bucket name hosting the Web Dashboard |
 | <a name="output_dashboard_url"></a> [dashboard_url](#output\_dashboard_url) | HTTPS URL of the Serenity-Ops Web Dashboard (CloudFront) |
