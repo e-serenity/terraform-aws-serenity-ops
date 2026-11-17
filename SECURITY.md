@@ -14,7 +14,7 @@
 
 ### 3. Web Console Edge Protection (`serenity-ops`)
 - **Private S3 + CloudFront OAC:** Static frontend assets are stored in a private S3 bucket (`block_public_acls = true`, `block_public_policy = true`) accessible only by CloudFront via Origin Access Control (OAC).
-- **Edge IPv4 & IPv6 Allowlisting (`dashboard_allowed_ips`):** When configured, a CloudFront Function (`viewer-request`) enforces your CIDR allowlist at the AWS Edge before requests reach S3 or the Live API Lambda. If only IPv4 CIDRs are provided, IPv6 (`AAAA`) is disabled on the distribution to prevent dual-stack bypasses or blocks.
+- **Fail-Closed Edge IPv4 & IPv6 Allowlisting (`dashboard_allowed_ips`):** A CloudFront Function (`viewer-request`) is always attached to the Web Console distribution and enforces your CIDR allowlist at the AWS Edge before requests reach S3 or the Live API Lambda. By default (`dashboard_allowed_ips = []`), all public access is blocked (`HTTP 403 Forbidden`); operators must explicitly specify their VPN/office CIDRs (or `["0.0.0.0/0"]` if public access is intentionally desired). If only IPv4 CIDRs are provided, IPv6 (`AAAA`) is disabled on the distribution to prevent dual-stack bypasses or blocks.
 - **Origin Secret Header Verification:** CloudFront injects a random 32-character `x-serenity-origin-secret` header into requests forwarded to `/api/*`. The Live API Lambda rejects direct invocations missing this header with `HTTP 403 Forbidden`.
 
 ### 4. 3-Layer AI IAM Governance & Human-in-the-Loop

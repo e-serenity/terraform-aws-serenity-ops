@@ -103,7 +103,7 @@ terraform-aws-serenity-ops/
    ```
 
 ### Web Console Edge Security (`dashboard_allowed_ips`)
-- **Zero-Cost IPv4 & IPv6 Edge Filtering:** When `dashboard_allowed_ips` is set (e.g., `["203.0.113.10/32", "2a01:e0a:123:456::/64"]`), a CloudFront Function (`viewer-request`) enforces your IP policy at the edge before requests reach S3 or the Live API Lambda, without requiring AWS WAF.
+- **Fail-Closed Zero-Cost IPv4 & IPv6 Edge Filtering:** A CloudFront Function (`viewer-request`) is always attached to the Web Console distribution and enforces your IP policy at the edge before requests reach S3 or the Live API Lambda, without requiring AWS WAF. By default (`dashboard_allowed_ips = []`), all requests are denied (`403 Forbidden`) until you specify allowed CIDRs (e.g., `["203.0.113.10/32", "2a01:e0a:123:456::/64"]`, or explicitly `["0.0.0.0/0"]`).
 - **Dual-Stack Handling:** If you only specify IPv4 CIDRs in `dashboard_allowed_ips`, `serenity-ops` automatically disables IPv6 (`AAAA`) records on the CloudFront distribution (`is_ipv6_enabled = false`) so dual-stack browsers do not connect over IPv6 and get blocked.
 
 ---

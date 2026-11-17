@@ -47,7 +47,7 @@ variable "enable_dashboard" {
 }
 
 variable "dashboard_allowed_ips" {
-  description = "Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (empty disables IP filtering)"
+  description = "Allowed IPv4 or IPv6 addresses/CIDRs for the Web Dashboard via CloudFront Function (fail-closed by default: empty [] blocks all public access; specify your VPN/office CIDRs or explicitly set ['0.0.0.0/0'] to open publicly)"
   type        = list(string)
   default     = []
 }

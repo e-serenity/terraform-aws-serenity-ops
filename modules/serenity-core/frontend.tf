@@ -1,7 +1,7 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  enable_ip_filter      = var.enable_dashboard && length(var.dashboard_allowed_ips) > 0
+  enable_ip_filter      = var.enable_dashboard
   has_ipv6_allowed      = anytrue([for ip in var.dashboard_allowed_ips : strcontains(ip, ":")])
   dashboard_bucket_name = "${local.name_prefix}-dashboard-${data.aws_caller_identity.current.account_id}"
 
@@ -99,6 +99,8 @@ resource "aws_cloudfront_function" "dashboard_ip_filter" {
         return c === e;
       }
       const parts = e.split('/');
+      const bits = parseInt(parts[1], 10);
+      if (bits === 0) return true;
       const prefix = parts[0].replace(/::$/, '');
       return c === parts[0] || c.indexOf(prefix + ':') === 0;
     }
@@ -150,7 +152,7 @@ resource "aws_cloudfront_function" "dashboard_ip_filter" {
 resource "aws_cloudfront_distribution" "dashboard" {
   count               = var.enable_dashboard ? 1 : 0
   enabled             = true
-  is_ipv6_enabled     = !local.enable_ip_filter || local.has_ipv6_allowed
+  is_ipv6_enabled     = local.has_ipv6_allowed
   comment             = "Serenity-Ops Web Dashboard (${local.name_prefix})"
   default_root_object = "index.html"
   price_class         = var.dashboard_price_class

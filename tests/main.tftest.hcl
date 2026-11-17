@@ -94,6 +94,11 @@ run "default_finops_and_security_hardening" {
     condition     = var.dashboard_s3_force_destroy == false
     error_message = "dashboard_s3_force_destroy must default to false."
   }
+
+  assert {
+    condition     = length(var.dashboard_allowed_ips) == 0
+    error_message = "dashboard_allowed_ips must default to an empty list (fail-closed at CloudFront edge)."
+  }
 }
 
 run "byo_ecs_cluster_skips_vpc_creation" {

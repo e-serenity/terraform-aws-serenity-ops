@@ -23,6 +23,6 @@ module "secrets_manager" {
 
   tags = var.tags
   replica = var.region_backup != "" ? {
-    "${var.region_backup}" = {}
+    (var.region_backup) = {}
   } : {}
 }
