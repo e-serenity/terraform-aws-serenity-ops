@@ -99,6 +99,69 @@ run "default_finops_and_security_hardening" {
     condition     = length(var.dashboard_allowed_ips) == 0
     error_message = "dashboard_allowed_ips must default to an empty list (fail-closed at CloudFront edge)."
   }
+
+  assert {
+    condition     = var.dashboard_auth_mode == "cognito"
+    error_message = "dashboard_auth_mode must default to 'cognito' so the Web Dashboard and APIs require authentication by default."
+  }
+
+  assert {
+    condition     = var.dashboard_cognito_mfa_configuration == "OPTIONAL"
+    error_message = "dashboard_cognito_mfa_configuration must default to 'OPTIONAL' with TOTP enabled."
+  }
+}
+
+run "byo_oidc_dashboard_auth_mode" {
+  command = plan
+
+  variables {
+    project_name              = "serenity-test"
+    environment               = "prod"
+    region                    = "eu-west-3"
+    enable_core               = true
+    enable_bot                = false
+    enable_ses                = false
+    dashboard_auth_mode       = "oidc"
+    dashboard_oidc_issuer_url = "https://auth.example.com/application/o/serenity-ops/"
+    dashboard_oidc_client_id  = "serenity-spa-client-id"
+    dashboard_oidc_allowed_groups = [
+      "platform-admins"
+    ]
+  }
+
+  assert {
+    condition     = output.dashboard_auth_mode == "oidc"
+    error_message = "dashboard_auth_mode output should reflect 'oidc'."
+  }
+
+  assert {
+    condition     = output.dashboard_cognito_user_pool_id == null
+    error_message = "Cognito User Pool must not be created when dashboard_auth_mode = 'oidc'."
+  }
+}
+
+run "none_dashboard_auth_mode_skips_cognito" {
+  command = plan
+
+  variables {
+    project_name        = "serenity-test"
+    environment         = "dev"
+    region              = "eu-west-3"
+    enable_core         = true
+    enable_bot          = false
+    enable_ses          = false
+    dashboard_auth_mode = "none"
+  }
+
+  assert {
+    condition     = output.dashboard_auth_mode == "none"
+    error_message = "dashboard_auth_mode output should reflect 'none'."
+  }
+
+  assert {
+    condition     = output.dashboard_cognito_user_pool_id == null
+    error_message = "Cognito User Pool must not be created when dashboard_auth_mode = 'none'."
+  }
 }
 
 run "byo_ecs_cluster_skips_vpc_creation" {

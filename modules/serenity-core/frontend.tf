@@ -144,7 +144,21 @@ resource "aws_cloudfront_function" "dashboard_ip_filter" {
           body: '403 Forbidden - Access restricted by IP policy (Serenity-Ops)'
         };
       }
-      return event.request;
+      const req = event.request;
+      if (req.uri && req.uri.indexOf('/_internal/') === 0) {
+        return {
+          statusCode: 404,
+          statusDescription: 'Not Found',
+          headers: {
+            'content-type': { value: 'text/plain; charset=utf-8' }
+          },
+          body: 'Not Found'
+        };
+      }
+      if (req.uri && req.uri.indexOf('/api/') !== 0 && req.uri.indexOf('.') === -1) {
+        req.uri = '/index.html';
+      }
+      return req;
     }
   EOT
 }
@@ -216,20 +230,6 @@ resource "aws_cloudfront_distribution" "dashboard" {
         function_arn = aws_cloudfront_function.dashboard_ip_filter[0].arn
       }
     }
-  }
-
-  custom_error_response {
-    error_code            = 403
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
-  }
-
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
   }
 
   restrictions {

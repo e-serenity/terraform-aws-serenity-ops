@@ -78,6 +78,17 @@ data "aws_iam_policy_document" "dashboard_api_permissions" {
     ]
     resources = ["*"]
   }
+
+  statement {
+    sid    = "ReadDashboardAuthConfig"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject"
+    ]
+    resources = [
+      "${aws_s3_bucket.dashboard[0].arn}/${local.auth_config_s3_key}"
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "dashboard_api" {
@@ -96,16 +107,19 @@ resource "aws_lambda_function" "dashboard_api" {
   architectures    = ["arm64"]
   filename         = data.archive_file.dashboard_api[0].output_path
   source_code_hash = data.archive_file.dashboard_api[0].output_base64sha256
-  timeout          = 10
+  timeout          = 15
   memory_size      = 128
 
   environment {
     variables = {
-      HUB_TABLE_NAME = local.dynamodb_hub_table_name
-      AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
-      ENVIRONMENT    = var.environment
-      ORIGIN_SECRET  = random_password.api_origin_secret[0].result
-      RETENTION_DAYS = "90"
+      HUB_TABLE_NAME     = local.dynamodb_hub_table_name
+      AWS_ACCOUNT_ID     = data.aws_caller_identity.current.account_id
+      ENVIRONMENT        = var.environment
+      ORIGIN_SECRET      = random_password.api_origin_secret[0].result
+      RETENTION_DAYS     = "90"
+      AUTH_MODE          = var.dashboard_auth_mode
+      AUTH_CONFIG_BUCKET = aws_s3_bucket.dashboard[0].id
+      AUTH_CONFIG_KEY    = local.auth_config_s3_key
     }
   }
 

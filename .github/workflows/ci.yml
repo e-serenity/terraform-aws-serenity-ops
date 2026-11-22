@@ -93,8 +93,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Compile Serverless Live API Lambda
-        run: python -m py_compile modules/serenity-core/lambda/api/index.py
+      - name: Compile & Test Serverless Live API Lambda
+        run: |
+          python -m py_compile modules/serenity-core/lambda/api/index.py
+          pip install pytest boto3
+          PYTHONPATH=modules/serenity-core/lambda/api pytest -q modules/serenity-core/lambda/api/test_index.py
 
       - name: Install uv & Run Serenity-Bot Unit Tests
         working-directory: modules/serenity-bot/bot

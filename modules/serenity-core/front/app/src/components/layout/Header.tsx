@@ -9,6 +9,8 @@ import {
   X,
   Globe,
   RefreshCw,
+  LogOut,
+  User,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -20,6 +22,9 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
     isLiveMode,
     hasLiveBackend,
     setMode,
+    authConfig,
+    currentUser,
+    logoutFromOidc,
     accountId,
     environment,
     region,
@@ -115,6 +120,33 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
             >
               {t('Démo', 'Demo')}
             </button>
+            {authConfig?.enabled && currentUser && (
+              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-800">
+                <div
+                  title={
+                    currentUser.canWrite
+                      ? currentUser.identity
+                      : `${currentUser.identity} (${t('Lecture seule', 'Read-only')})`
+                  }
+                  className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-[11px] text-slate-300 max-w-[180px]"
+                >
+                  <User className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span className="truncate">{currentUser.identity}</span>
+                  {!currentUser.canWrite && (
+                    <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0">
+                      RO
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={logoutFromOidc}
+                  title={t('Se déconnecter', 'Sign out')}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700 hover:border-rose-500/30 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="relative flex items-center gap-2">

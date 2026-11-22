@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
   Language,
   RetentionDays,
@@ -9,7 +9,19 @@ import {
   IncidentReport,
   BotChatMessage,
   AgentInfo,
+  AuthConfig,
+  AuthUser,
 } from '../types';
+import {
+  StoredAuthSession,
+  loadStoredSession,
+  clearStoredSession,
+  isSessionValid,
+  startOidcLogin,
+  exchangeAuthorizationCode,
+  refreshOidcSession,
+  buildLogoutUrl,
+} from '../utils/oidcAuth';
 
 export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
   {
@@ -191,10 +203,20 @@ export const getAgentsList = (lang: Language): AgentInfo[] => [
 
 export const AGENTS_LIST: AgentInfo[] = getAgentsList('fr');
 
+export type AuthStatus = 'checking' | 'unauthenticated' | 'authenticated' | 'demo';
+
 interface DemoContextType {
   isLiveMode: boolean;
   hasLiveBackend: boolean;
   setMode: (mode: 'live' | 'demo') => void;
+  authStatus: AuthStatus;
+  authConfig: AuthConfig | null;
+  authError: string | null;
+  currentUser: AuthUser | null;
+  apiNotice: string | null;
+  clearApiNotice: () => void;
+  loginWithOidc: () => Promise<void>;
+  logoutFromOidc: () => void;
   accountId: string;
   environment: string;
   region: string;
@@ -240,8 +262,24 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const t = (fr: string, en: string) => (language === 'fr' ? fr : en);
 
+  const isStaticDemoHost = () => {
+    if (typeof window === 'undefined') return true;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('demo') === 'true' || window.location.hostname.includes('e-serenity.fr');
+  };
+
   const [hasLiveBackend, setHasLiveBackend] = useState<boolean>(false);
   const [isLiveMode, setIsLiveMode] = useState<boolean>(false);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>(() =>
+    isStaticDemoHost() ? 'demo' : 'checking'
+  );
+  const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [apiNotice, setApiNotice] = useState<string | null>(null);
+  const authSessionRef = useRef<StoredAuthSession | null>(null);
+  const authConfigRef = useRef<AuthConfig | null>(null);
+
   const [accountId, setAccountId] = useState<string>('123456789012');
   const [environment, setEnvironment] = useState<string>('prod');
   const [region, setRegion] = useState<string>('eu-west-3');
@@ -259,18 +297,65 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [retentionDays, setRetentionDays] = useState<RetentionDays>(90);
 
-  const refreshLiveState = useCallback(async () => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('demo') === 'true' || window.location.hostname.includes('e-serenity.fr')) {
-        return;
+  const clearApiNotice = useCallback(() => setApiNotice(null), []);
+
+  const authorizedFetch = useCallback(
+    async (input: string, init: RequestInit = {}): Promise<Response> => {
+      const cfg = authConfigRef.current;
+      let session = authSessionRef.current;
+
+      const buildHeaders = (tok?: string): Record<string, string> => {
+        const merged: Record<string, string> = {
+          Accept: 'application/json',
+          ...((init.headers as Record<string, string>) || {}),
+        };
+        if (tok) {
+          merged.Authorization = `Bearer ${tok}`;
+        }
+        return merged;
+      };
+
+      let res = await fetch(input, { ...init, headers: buildHeaders(session?.idToken) });
+
+      if (res.status === 401 && cfg?.enabled) {
+        if (session?.refreshToken) {
+          const refreshed = await refreshOidcSession(cfg, session.refreshToken);
+          if (refreshed) {
+            authSessionRef.current = refreshed;
+            setCurrentUser(refreshed.user);
+            res = await fetch(input, { ...init, headers: buildHeaders(refreshed.idToken) });
+          }
+        }
+        if (res.status === 401) {
+          clearStoredSession();
+          authSessionRef.current = null;
+          setCurrentUser(null);
+          setIsLiveMode(false);
+          setAuthError('Session expired. Please sign in again.');
+          setAuthStatus('unauthenticated');
+        }
+      } else if (res.status === 403) {
+        try {
+          const errBody = (await res.clone().json()) as { error?: string };
+          if (errBody?.error) {
+            setApiNotice(errBody.error);
+          }
+        } catch {
+          setApiNotice('Insufficient permissions for this action.');
+        }
       }
-    }
+
+      return res;
+    },
+    []
+  );
+
+  const fetchLiveStateInternal = useCallback(async () => {
     try {
-      const res = await fetch('/api/state', { headers: { Accept: 'application/json' } });
-      if (!res.ok) return;
+      const res = await authorizedFetch('/api/state');
+      if (!res.ok) return false;
       const contentType = res.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) return;
+      if (!contentType.includes('application/json')) return false;
       const data = await res.json();
       if (data && data.mode === 'live') {
         setHasLiveBackend(true);
@@ -288,14 +373,149 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (Array.isArray(data.cloudWatchAlarms)) setLiveCwAlarms(data.cloudWatchAlarms);
         if (Array.isArray(data.incidents)) setLiveIncidents(data.incidents);
         if (Array.isArray(data.chatMessages)) setLiveChatMessages(data.chatMessages);
+        if (data.currentUser) setCurrentUser(data.currentUser as AuthUser);
+        return true;
       }
+      return false;
     } catch {
+      return false;
+    }
+  }, [authorizedFetch]);
+
+  const refreshLiveState = useCallback(async () => {
+    if (isStaticDemoHost()) return;
+    await fetchLiveStateInternal();
+  }, [fetchLiveStateInternal]);
+
+  const loginWithOidc = useCallback(async () => {
+    const cfg = authConfigRef.current;
+    if (!cfg || !cfg.enabled) return;
+    setAuthError(null);
+    await startOidcLogin(cfg);
+  }, []);
+
+  const logoutFromOidc = useCallback(() => {
+    const cfg = authConfigRef.current;
+    const idToken = authSessionRef.current?.idToken;
+    clearStoredSession();
+    authSessionRef.current = null;
+    setCurrentUser(null);
+    setIsLiveMode(false);
+    setAuthError(null);
+    setAuthStatus('unauthenticated');
+
+    if (cfg?.enabled) {
+      const logoutUrl = buildLogoutUrl(cfg, idToken);
+      if (logoutUrl) {
+        window.location.assign(logoutUrl);
+      }
     }
   }, []);
 
   useEffect(() => {
-    refreshLiveState();
-  }, [refreshLiveState]);
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      if (isStaticDemoHost()) {
+        if (!cancelled) setAuthStatus('demo');
+        return;
+      }
+
+      try {
+        const cfgRes = await fetch('/api/auth/config', { headers: { Accept: 'application/json' } });
+        const contentType = cfgRes.headers.get('content-type') || '';
+        if (!cfgRes.ok || !contentType.includes('application/json')) {
+          if (!cancelled) setAuthStatus('demo');
+          return;
+        }
+
+        const cfg = (await cfgRes.json()) as AuthConfig;
+        if (cancelled) return;
+
+        authConfigRef.current = cfg;
+        setAuthConfig(cfg);
+        setHasLiveBackend(true);
+
+        if (!cfg.enabled) {
+          const ok = await fetchLiveStateInternal();
+          if (!cancelled) setAuthStatus(ok ? 'authenticated' : 'demo');
+          return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const oauthError = params.get('error');
+        const oauthCode = params.get('code');
+        const oauthState = params.get('state');
+
+        if (oauthError) {
+          const desc = params.get('error_description') || oauthError;
+          window.history.replaceState({}, document.title, window.location.pathname);
+          if (!cancelled) {
+            setAuthError(desc);
+            setAuthStatus('unauthenticated');
+          }
+          return;
+        }
+
+        if (oauthCode && oauthState) {
+          try {
+            const session = await exchangeAuthorizationCode(cfg, oauthCode, oauthState);
+            window.history.replaceState({}, document.title, window.location.pathname);
+            if (cancelled) return;
+            authSessionRef.current = session;
+            setCurrentUser(session.user);
+            const ok = await fetchLiveStateInternal();
+            if (!cancelled) {
+              setAuthStatus(ok ? 'authenticated' : 'unauthenticated');
+            }
+          } catch (err) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            if (!cancelled) {
+              setAuthError(err instanceof Error ? err.message : 'OIDC sign-in failed.');
+              setAuthStatus('unauthenticated');
+            }
+          }
+          return;
+        }
+
+        const stored = loadStoredSession();
+        if (isSessionValid(stored) && stored) {
+          authSessionRef.current = stored;
+          setCurrentUser(stored.user);
+          const ok = await fetchLiveStateInternal();
+          if (!cancelled) {
+            setAuthStatus(ok ? 'authenticated' : 'unauthenticated');
+          }
+          return;
+        }
+
+        if (stored?.refreshToken) {
+          const refreshed = await refreshOidcSession(cfg, stored.refreshToken);
+          if (refreshed && !cancelled) {
+            authSessionRef.current = refreshed;
+            setCurrentUser(refreshed.user);
+            const ok = await fetchLiveStateInternal();
+            if (!cancelled) {
+              setAuthStatus(ok ? 'authenticated' : 'unauthenticated');
+            }
+            return;
+          }
+          clearStoredSession();
+        }
+
+        if (!cancelled) {
+          setAuthStatus('unauthenticated');
+        }
+      } catch {
+        if (!cancelled) setAuthStatus('demo');
+      }
+    };
+
+    bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchLiveStateInternal]);
 
   const setMode = (mode: 'live' | 'demo') => {
     if (mode === 'live' && hasLiveBackend) {
@@ -553,32 +773,40 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userMsg: BotChatMessage = {
       id: `msg-u-${Date.now()}`,
       sender: 'user',
-      author: isLiveMode ? 'Operator (Web Console)' : 'You (Web Console)',
+      author: isLiveMode
+        ? currentUser?.identity
+          ? `${currentUser.identity} (Web Console)`
+          : 'Operator (Web Console)'
+        : 'You (Web Console)',
       channel: 'Web Console',
       timestamp: timeStr,
       text: trimmed,
     };
 
     if (isLiveMode) {
-      fetch('/api/chat', {
+      authorizedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: trimmed }),
-      }).catch(() => {});
-
-      const ackMsg: BotChatMessage = {
-        id: `msg-b-${Date.now() + 1}`,
-        sender: 'bot',
-        author: 'Serenity-Ops Hub',
-        channel: 'Web Console',
-        timestamp: timeStr,
-        text: t(
-          'Message enregistré dans DynamoDB (SERENITY#CHAT). Pour les investigations temps réel interactives, utilisez @Serenity-Ops dans Slack.',
-          'Message saved to DynamoDB (SERENITY#CHAT). For real-time interactive investigations, mention @Serenity-Ops in Slack.'
-        ),
-        toolsUsed: ['DynamoDB Hub'],
-      };
-      setCustomChatMessages((prev) => [...prev, userMsg, ackMsg]);
+      })
+        .then((res) => {
+          if (res.ok) {
+            const ackMsg: BotChatMessage = {
+              id: `msg-b-${Date.now() + 1}`,
+              sender: 'bot',
+              author: 'Serenity-Ops Hub',
+              channel: 'Web Console',
+              timestamp: timeStr,
+              text: t(
+                'Message enregistré dans DynamoDB (SERENITY#CHAT). Pour les investigations temps réel interactives, utilisez @Serenity-Ops dans Slack.',
+                'Message saved to DynamoDB (SERENITY#CHAT). For real-time interactive investigations, mention @Serenity-Ops in Slack.'
+              ),
+              toolsUsed: ['DynamoDB Hub'],
+            };
+            setCustomChatMessages((prev) => [...prev, userMsg, ackMsg]);
+          }
+        })
+        .catch(() => {});
       return;
     }
 
@@ -674,7 +902,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLiveIncidents(applyApproved);
 
     if (isLiveMode) {
-      fetch('/api/actions/approve', {
+      authorizedFetch('/api/actions/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ incidentId }),
@@ -705,7 +933,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLiveIncidents(applyRejected);
 
     if (isLiveMode) {
-      fetch('/api/actions/reject', {
+      authorizedFetch('/api/actions/reject', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ incidentId }),
@@ -725,7 +953,7 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     if (isLiveMode) {
-      fetch('/api/actions/approve', {
+      authorizedFetch('/api/actions/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventId }),
@@ -758,6 +986,14 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLiveMode,
         hasLiveBackend,
         setMode,
+        authStatus,
+        authConfig,
+        authError,
+        currentUser,
+        apiNotice,
+        clearApiNotice,
+        loginWithOidc,
+        logoutFromOidc,
         accountId: isLiveMode ? accountId : '123456789012',
         environment: isLiveMode ? environment : 'demo',
         region,

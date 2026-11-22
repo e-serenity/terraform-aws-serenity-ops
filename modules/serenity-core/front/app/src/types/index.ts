@@ -88,3 +88,23 @@ export interface AgentInfo {
   writeScope?: string;
   status: 'ACTIVE' | 'STANDBY';
 }
+
+export interface AuthConfig {
+  enabled: boolean;
+  mode: 'cognito' | 'oidc' | 'none';
+  issuer: string;
+  clientId: string;
+  scopes: string;
+  authorizationEndpoint: string;
+  tokenEndpoint: string;
+  logoutEndpoint: string;
+  allowedGroups: string[];
+}
+
+export interface AuthUser {
+  identity: string;
+  email: string;
+  name: string;
+  groups: string[];
+  canWrite: boolean;
+}

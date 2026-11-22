@@ -102,9 +102,10 @@ terraform-aws-serenity-ops/
    }
    ```
 
-### Web Console Edge Security (`dashboard_allowed_ips`)
+### Web Console Edge Security & Authentication (`dashboard_allowed_ips` & `dashboard_auth_mode`)
 - **Fail-Closed Zero-Cost IPv4 & IPv6 Edge Filtering:** A CloudFront Function (`viewer-request`) is always attached to the Web Console distribution and enforces your IP policy at the edge before requests reach S3 or the Live API Lambda, without requiring AWS WAF. By default (`dashboard_allowed_ips = []`), all requests are denied (`403 Forbidden`) until you specify allowed CIDRs (e.g., `["203.0.113.10/32", "2a01:e0a:123:456::/64"]`, or explicitly `["0.0.0.0/0"]`).
 - **Dual-Stack Handling:** If you only specify IPv4 CIDRs in `dashboard_allowed_ips`, `serenity-ops` automatically disables IPv6 (`AAAA`) records on the CloudFront distribution (`is_ipv6_enabled = false`) so dual-stack browsers do not connect over IPv6 and get blocked.
+- **Cognito / OIDC Operator Authentication (PKCE + Server-Side JWT Verification):** Enabled by default (`dashboard_auth_mode = "cognito"` at `$0/mo` Free Tier, or `"oidc"` for BYO Okta, Microsoft Entra ID, Google Workspace, Authentik, or Keycloak). The React console performs an OAuth 2.0 Authorization Code + PKCE flow, sends `Authorization: Bearer <jwt>` on all `/api/*` requests, and the Live API Lambda cryptographically verifies RS256/RS384/RS512 signatures against the provider's JWKS. Operator identities are logged in DynamoDB Hub and passed to `sts:AssumeRole` (`RoleSessionName`) for end-to-end AWS CloudTrail attribution.
 
 ---
 
