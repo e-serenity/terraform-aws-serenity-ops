@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { DemoProvider } from './context/DemoContext';
+import { DemoProvider, useDemo } from './context/DemoContext';
 import { Layout } from './components/layout/Layout';
+import { LoginGate } from './components/auth/LoginGate';
 import { Overview } from './pages/Overview';
 import { Topology } from './pages/Topology';
 import { BotModule } from './pages/modules/BotModule';
@@ -9,8 +10,13 @@ import { CloudWatchModule } from './pages/modules/CloudWatchModule';
 import { FinOpsModule } from './pages/modules/FinOpsModule';
 import { TeaserModule } from './pages/modules/TeaserModule';
 
-export const App: React.FC = () => {
+const AppShell: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('overview');
+  const { authStatus, apiNotice, clearApiNotice } = useDemo();
+
+  if (authStatus === 'checking' || authStatus === 'unauthenticated') {
+    return <LoginGate />;
+  }
 
   const renderContent = () => {
     switch (currentTab) {
@@ -34,10 +40,27 @@ export const App: React.FC = () => {
   };
 
   return (
+    <Layout currentTab={currentTab} setCurrentTab={setCurrentTab}>
+      {apiNotice && (
+        <div className="mb-4 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-3">
+          <span>{apiNotice}</span>
+          <button
+            onClick={clearApiNotice}
+            className="text-amber-300 hover:text-white font-medium shrink-0"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      {renderContent()}
+    </Layout>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
     <DemoProvider>
-      <Layout currentTab={currentTab} setCurrentTab={setCurrentTab}>
-        {renderContent()}
-      </Layout>
+      <AppShell />
     </DemoProvider>
   );
 };

@@ -10,7 +10,7 @@ resource "aws_dynamodb_table_item" "module_registration" {
     name           = { S = "serenity-ses" }
     status         = { S = "ACTIVE" }
     environment    = { S = var.environment }
-    version        = { S = "0.1.2" }
+    version        = { S = "0.1.3" }
     agent_role_arn = { S = try(aws_iam_role.serenity_agent_ses[0].arn, "") }
     updated_at     = { S = timestamp() }
   })

@@ -299,7 +299,7 @@ resource "aws_dynamodb_table_item" "bot_registration" {
     name           = { S = "serenity-bot" }
     status         = { S = "ACTIVE" }
     environment    = { S = var.environment }
-    version        = { S = "0.1.2" }
+    version        = { S = "0.1.3" }
     retention_days = { N = tostring(var.history_retention_days) }
     integrations = {
       M = {

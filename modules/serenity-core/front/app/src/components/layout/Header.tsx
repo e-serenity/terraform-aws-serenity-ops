@@ -9,6 +9,8 @@ import {
   X,
   Globe,
   RefreshCw,
+  LogOut,
+  User,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -18,8 +20,9 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
   const {
     isLiveMode,
-    hasLiveBackend,
-    setMode,
+    authConfig,
+    currentUser,
+    logoutFromOidc,
     accountId,
     environment,
     region,
@@ -76,16 +79,6 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
         <div className="flex items-center bg-slate-800/90 border border-slate-700/70 rounded-lg p-0.5 text-xs font-medium">
           <Globe className="w-3.5 h-3.5 text-slate-400 ml-2 mr-1 hidden sm:inline" />
           <button
-            onClick={() => setLanguage('fr')}
-            className={`px-2 py-1 rounded-md transition-colors ${
-              language === 'fr'
-                ? 'bg-slate-700 text-white shadow-xs'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            FR
-          </button>
-          <button
             onClick={() => setLanguage('en')}
             className={`px-2 py-1 rounded-md transition-colors ${
               language === 'en'
@@ -94,6 +87,16 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
             }`}
           >
             EN
+          </button>
+          <button
+            onClick={() => setLanguage('fr')}
+            className={`px-2 py-1 rounded-md transition-colors ${
+              language === 'fr'
+                ? 'bg-slate-700 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            FR
           </button>
         </div>
 
@@ -108,24 +111,36 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
               <span>Live AWS</span>
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
-            <button
-              onClick={() => setMode('demo')}
-              title={t('Basculer vers la démo interactive', 'Switch to interactive demo')}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-colors"
-            >
-              {t('Démo', 'Demo')}
-            </button>
+            {authConfig?.enabled && currentUser && (
+              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-800">
+                <div
+                  title={
+                    currentUser.canWrite
+                      ? currentUser.identity
+                      : `${currentUser.identity} (${t('Lecture seule', 'Read-only')})`
+                  }
+                  className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-[11px] text-slate-300 max-w-[180px]"
+                >
+                  <User className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span className="truncate">{currentUser.identity}</span>
+                  {!currentUser.canWrite && (
+                    <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0">
+                      RO
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={logoutFromOidc}
+                  title={t('Se déconnecter', 'Sign out')}
+                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700 hover:border-rose-500/30 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="relative flex items-center gap-2">
-            {hasLiveBackend && (
-              <button
-                onClick={() => setMode('live')}
-                className="px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-medium transition-colors"
-              >
-                {t('Retour Live', 'Back to Live')}
-              </button>
-            )}
             <button
               onClick={() => setShowSimulator(!showSimulator)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-medium transition-all shadow-sm"
@@ -136,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({ currentTab }) => {
             </button>
 
             {showSimulator && (
-              <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-4 z-50 text-xs">
+              <div className="absolute top-full right-0 mt-2 w-80 max-h-[calc(100vh-5rem)] overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-4 z-50 text-xs">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
                   <div>
                     <span className="font-semibold text-white block">

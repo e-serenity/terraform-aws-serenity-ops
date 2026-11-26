@@ -207,9 +207,9 @@ variable "ecs_burstable_performance" {
 # ------------------------------------------------------------------------------
 
 variable "image" {
-  description = "Container image URI used when create_ecr_repository = false. Defaults to the pinned SemVer GHCR release image (:0.1.2) for reproducible zero-build deployments."
+  description = "Container image URI used when create_ecr_repository = false. Defaults to the pinned SemVer GHCR release image (:0.1.3) for reproducible zero-build deployments."
   type        = string
-  default     = "ghcr.io/e-serenity/serenity-bot:0.1.2"
+  default     = "ghcr.io/e-serenity/serenity-bot:0.1.3"
 }
 
 variable "create_ecr_repository" {

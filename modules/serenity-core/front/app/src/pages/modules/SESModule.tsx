@@ -44,7 +44,7 @@ export const SESModule: React.FC<SESModuleProps> = ({ setCurrentTab }) => {
                 rel="noreferrer"
                 className="text-xs font-mono text-slate-400 hover:text-violet-300 transition-colors"
               >
-                e-serenity/serenity-ops/aws//modules/serenity-ses v0.1.0
+                e-serenity/serenity-ops/aws//modules/serenity-ses v0.1.3
               </a>
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">

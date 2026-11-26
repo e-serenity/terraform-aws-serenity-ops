@@ -13,6 +13,16 @@ output "dashboard_url" {
   value       = module.serenity_ops.dashboard_url
 }
 
+output "dashboard_cognito_user_pool_id" {
+  description = "AWS Cognito User Pool ID protecting the Web Dashboard"
+  value       = module.serenity_ops.dashboard_cognito_user_pool_id
+}
+
+output "dashboard_cognito_hosted_ui_url" {
+  description = "AWS Cognito Hosted UI URL for operator sign-in"
+  value       = module.serenity_ops.dashboard_cognito_hosted_ui_url
+}
+
 output "bot_ecs_cluster_arn" {
   description = "ECS Managed Instances cluster ARN (when enable_bot = true)"
   value       = module.serenity_ops.bot_ecs_cluster_arn

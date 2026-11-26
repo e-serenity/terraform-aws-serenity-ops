@@ -31,7 +31,7 @@
 
 ### Option 1: Default Mode (Creates VPC, Endpoints & ECS Cluster Automatically)
 
-By default, no networking or ECS variables are required. `serenity-bot` provisions its own VPC, NAT Gateway, S3 Gateway VPC Endpoint, and ARM64 ECS Managed Instances cluster, and pulls the pinned `ghcr.io/e-serenity/serenity-bot:0.1.2` image so the service starts on the first `terraform apply`:
+By default, no networking or ECS variables are required. `serenity-bot` provisions its own VPC, NAT Gateway, S3 Gateway VPC Endpoint, and ARM64 ECS Managed Instances cluster, and pulls the pinned `ghcr.io/e-serenity/serenity-bot:0.1.3` image so the service starts on the first `terraform apply`:
 
 ```hcl
 module "serenity_bot" {
@@ -111,12 +111,12 @@ llm_fallback_model    = "global.openai.gpt-6.1-sol"
 ```
 ⚠️ *Note: Enabling a non-Bedrock fallback provider (`openai`, `gemini`, `anthropic`) sends fallback prompts outside your AWS account.*
 
-## Container Image: Default `:0.1.2` vs Private AWS ECR (Recommended for Production)
+## Container Image: Default `:0.1.3` vs Private AWS ECR (Recommended for Production)
 
 ### 1. Default Behavior (`create_ecr_repository = false`): Pinned SemVer Image
 To let you test `serenity-bot` in a single `terraform apply` without building an ARM64 Docker image first, `image` defaults to the pinned SemVer release image:
 ```hcl
-image = "ghcr.io/e-serenity/serenity-bot:0.1.2"
+image = "ghcr.io/e-serenity/serenity-bot:0.1.3"
 ```
 > **Note:**
 > While convenient for evaluation and quickstarts, pulling from an external registry (`ghcr.io`) introduces an external dependency during ECS task launches or restarts.
@@ -228,7 +228,7 @@ For production environments, we recommend hosting the container image inside you
 | <a name="input_existing_vpc_id"></a> [existing_vpc_id](#input\_existing_vpc_id) | Existing VPC ID (required when cluster_arn is empty and create_vpc = false) | `string` | `""` | no |
 | <a name="input_gitlab_allowed_namespace"></a> [gitlab_allowed_namespace](#input\_gitlab_allowed_namespace) | Optional allowed GitLab group/namespace prefix (e.g., 'my-org/') | `string` | `""` | no |
 | <a name="input_history_retention_days"></a> [history_retention_days](#input\_history_retention_days) | Retention period in days for incident history, chat messages, and audit records via native DynamoDB TTL | `number` | `90` | no |
-| <a name="input_image"></a> [image](#input\_image) | Container image URI used when create_ecr_repository = false. Defaults to the pinned SemVer GHCR release image (:0.1.2) for reproducible zero-build deployments. | `string` | `"ghcr.io/e-serenity/serenity-bot:0.1.2"` | no |
+| <a name="input_image"></a> [image](#input\_image) | Container image URI used when create_ecr_repository = false. Defaults to the pinned SemVer GHCR release image (:0.1.3) for reproducible zero-build deployments. | `string` | `"ghcr.io/e-serenity/serenity-bot:0.1.3"` | no |
 | <a name="input_initial_secrets"></a> [initial_secrets](#input\_initial_secrets) | Optional initial secrets map to seed into AWS Secrets Manager when create_secrets = true (merged over defaults). Prefer populating secrets directly in AWS Secrets Manager or passing 'existing_secret_arn' in production to avoid storing tokens in Terraform state. | `map(string)` | `{}` | no |
 | <a name="input_llm_fallback_model"></a> [llm_fallback_model](#input\_llm_fallback_model) | Optional fallback LLM model ID (e.g., 'global.openai.gpt-6.1-sol', 'eu.anthropic.claude-sonnet-5-5', or 'gemini-3.5-flash'). Defaults to '' when llm_fallback_provider = 'none'. | `string` | `""` | no |
 | <a name="input_llm_fallback_provider"></a> [llm_fallback_provider](#input\_llm_fallback_provider) | Optional fallback LLM provider invoked automatically when the primary provider is throttled or unavailable ('none', 'bedrock', 'openai', 'gemini', or 'anthropic'). Defaults to 'none' to prevent routing prompts outside your primary provider unless explicitly configured. | `string` | `"none"` | no |

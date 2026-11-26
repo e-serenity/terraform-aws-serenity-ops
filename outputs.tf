@@ -32,6 +32,31 @@ output "dashboard_api_role_arn" {
   value       = try(module.serenity_core[0].dashboard_api_role_arn, null)
 }
 
+output "dashboard_auth_mode" {
+  description = "Configured authentication mode for the Web Dashboard ('cognito', 'oidc', or 'none')"
+  value       = try(module.serenity_core[0].dashboard_auth_mode, null)
+}
+
+output "dashboard_cognito_user_pool_id" {
+  description = "AWS Cognito User Pool ID protecting the Web Dashboard (null when dashboard_auth_mode != 'cognito')"
+  value       = try(module.serenity_core[0].dashboard_cognito_user_pool_id, null)
+}
+
+output "dashboard_cognito_user_pool_arn" {
+  description = "AWS Cognito User Pool ARN protecting the Web Dashboard (null when dashboard_auth_mode != 'cognito')"
+  value       = try(module.serenity_core[0].dashboard_cognito_user_pool_arn, null)
+}
+
+output "dashboard_cognito_client_id" {
+  description = "AWS Cognito SPA App Client ID (PKCE, no client secret; null when dashboard_auth_mode != 'cognito')"
+  value       = try(module.serenity_core[0].dashboard_cognito_client_id, null)
+}
+
+output "dashboard_cognito_hosted_ui_url" {
+  description = "HTTPS base URL of the AWS Cognito Hosted UI domain (null when dashboard_auth_mode != 'cognito')"
+  value       = try(module.serenity_core[0].dashboard_cognito_hosted_ui_url, null)
+}
+
 # ------------------------------------------------------------------------------
 # Serenity-Bot
 # ------------------------------------------------------------------------------

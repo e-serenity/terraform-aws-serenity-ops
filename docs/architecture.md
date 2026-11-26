@@ -102,9 +102,10 @@ terraform-aws-serenity-ops/
    }
    ```
 
-### Web Console Edge Security (`dashboard_allowed_ips`)
+### Web Console Edge Security & Authentication (`dashboard_allowed_ips` & `dashboard_auth_mode`)
 - **Fail-Closed Zero-Cost IPv4 & IPv6 Edge Filtering:** A CloudFront Function (`viewer-request`) is always attached to the Web Console distribution and enforces your IP policy at the edge before requests reach S3 or the Live API Lambda, without requiring AWS WAF. By default (`dashboard_allowed_ips = []`), all requests are denied (`403 Forbidden`) until you specify allowed CIDRs (e.g., `["203.0.113.10/32", "2a01:e0a:123:456::/64"]`, or explicitly `["0.0.0.0/0"]`).
 - **Dual-Stack Handling:** If you only specify IPv4 CIDRs in `dashboard_allowed_ips`, `serenity-ops` automatically disables IPv6 (`AAAA`) records on the CloudFront distribution (`is_ipv6_enabled = false`) so dual-stack browsers do not connect over IPv6 and get blocked.
+- **Cognito / OIDC Operator Authentication (PKCE + Server-Side JWT Verification):** Enabled by default (`dashboard_auth_mode = "cognito"` at `$0/mo` Free Tier, or `"oidc"` for BYO Okta, Microsoft Entra ID, Google Workspace, Authentik, or Keycloak). The React console performs an OAuth 2.0 Authorization Code + PKCE flow, sends `Authorization: Bearer <jwt>` on all `/api/*` requests, and the Live API Lambda cryptographically verifies RS256/RS384/RS512 signatures against the provider's JWKS. Operator identities are logged in DynamoDB Hub and passed to `sts:AssumeRole` (`RoleSessionName`) for end-to-end AWS CloudTrail attribution.
 
 ---
 
@@ -120,9 +121,9 @@ Networking and compute resources are provisioned only when you deploy `serenity-
    When you provide an existing `cluster_arn` (with `capacity_provider_name` and `subnet_ids`), `serenity-bot` skips VPC, NAT Gateway, VPC Endpoint, and ECS cluster creation, and runs the bot service directly inside your cluster.
 3. **Bring-Your-Own VPC (`cluster_arn = ""`, `create_vpc = false`):**
    Provisions the `serenity-bot` ECS Managed Instances cluster and VPC Endpoints inside your existing `existing_vpc_id` and `subnet_ids`.
-4. **Container Image (Pinned `:0.1.2` Image vs Private AWS ECR):**
-   - **By default (`create_ecr_repository = false`):** `serenity-bot` pulls `ghcr.io/e-serenity/serenity-bot:0.1.2` so `terraform apply` works out of the box with a reproducible SemVer tag without a local Docker build step.
-   - **For production (`create_ecr_repository = true`):** Terraform provisions a private `aws_ecr_repository` in your AWS account and points ECS to it so you do not depend on an external registry. See the **[`modules/serenity-bot` guide](../modules/serenity-bot/README.md#container-image-default-stable-vs-private-aws-ecr-recommended-for-production)** for the `docker buildx build --platform linux/arm64` commands to build and push your image.
+4. **Container Image (Pinned `:0.1.3` Image vs Private AWS ECR):**
+   - **By default (`create_ecr_repository = false`):** `serenity-bot` pulls `ghcr.io/e-serenity/serenity-bot:0.1.3` so `terraform apply` works out of the box with a reproducible SemVer tag without a local Docker build step.
+   - **For production (`create_ecr_repository = true`):** Terraform provisions a private `aws_ecr_repository` in your AWS account and points ECS to it so you do not depend on an external registry. See the **[`modules/serenity-bot` guide](../modules/serenity-bot/README.md#container-image-default-013-vs-private-aws-ecr-recommended-for-production)** for the `docker buildx build --platform linux/arm64` commands to build and push your image.
 
 ---
 

@@ -28,6 +28,19 @@ module "serenity_core" {
   dashboard_allowed_ips      = var.dashboard_allowed_ips
   dashboard_price_class      = var.dashboard_price_class
   dashboard_s3_force_destroy = var.dashboard_s3_force_destroy
+
+  dashboard_auth_mode                   = var.dashboard_auth_mode
+  dashboard_cognito_domain_prefix       = var.dashboard_cognito_domain_prefix
+  dashboard_cognito_admin_emails        = var.dashboard_cognito_admin_emails
+  dashboard_cognito_mfa_configuration   = var.dashboard_cognito_mfa_configuration
+  dashboard_additional_callback_urls    = var.dashboard_additional_callback_urls
+  dashboard_oidc_issuer_url             = var.dashboard_oidc_issuer_url
+  dashboard_oidc_client_id              = var.dashboard_oidc_client_id
+  dashboard_oidc_authorization_endpoint = var.dashboard_oidc_authorization_endpoint
+  dashboard_oidc_token_endpoint         = var.dashboard_oidc_token_endpoint
+  dashboard_oidc_logout_endpoint        = var.dashboard_oidc_logout_endpoint
+  dashboard_oidc_scopes                 = var.dashboard_oidc_scopes
+  dashboard_oidc_allowed_groups         = var.dashboard_oidc_allowed_groups
 }
 
 module "serenity_bot" {
