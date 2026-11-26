@@ -80,7 +80,7 @@ export const BotModule: React.FC = () => {
                   rel="noreferrer"
                   className="text-xs font-mono text-slate-400 hover:text-violet-300 transition-colors"
                 >
-                  e-serenity/serenity-ops/aws//modules/serenity-bot v0.1.0
+                  e-serenity/serenity-ops/aws//modules/serenity-bot v0.1.3
                 </a>
                 <span className="text-xs font-mono bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                   <Cpu className="w-3 h-3" />

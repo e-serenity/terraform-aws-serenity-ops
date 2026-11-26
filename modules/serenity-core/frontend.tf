@@ -145,15 +145,31 @@ resource "aws_cloudfront_function" "dashboard_ip_filter" {
         };
       }
       const req = event.request;
-      if (req.uri && req.uri.indexOf('/_internal/') === 0) {
-        return {
-          statusCode: 404,
-          statusDescription: 'Not Found',
-          headers: {
-            'content-type': { value: 'text/plain; charset=utf-8' }
-          },
-          body: 'Not Found'
-        };
+      if (req.uri) {
+        let decodedUri;
+        try {
+          decodedUri = decodeURIComponent(req.uri);
+        } catch (err) {
+          return {
+            statusCode: 400,
+            statusDescription: 'Bad Request',
+            headers: {
+              'content-type': { value: 'text/plain; charset=utf-8' }
+            },
+            body: 'Bad Request'
+          };
+        }
+        const normalizedUri = decodedUri.replace(/\/+/g, '/');
+        if (normalizedUri === '/_internal' || normalizedUri.indexOf('/_internal/') === 0) {
+          return {
+            statusCode: 404,
+            statusDescription: 'Not Found',
+            headers: {
+              'content-type': { value: 'text/plain; charset=utf-8' }
+            },
+            body: 'Not Found'
+          };
+        }
       }
       if (req.uri && req.uri.indexOf('/api/') !== 0 && req.uri.indexOf('.') === -1) {
         req.uri = '/index.html';
@@ -267,6 +283,15 @@ resource "aws_s3_bucket_policy" "dashboard" {
             "AWS:SourceArn" = aws_cloudfront_distribution.dashboard[0].arn
           }
         }
+      },
+      {
+        Sid    = "DenyCloudFrontInternalPrefix"
+        Effect = "Deny"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.dashboard[0].arn}/_internal/*"
       }
     ]
   })

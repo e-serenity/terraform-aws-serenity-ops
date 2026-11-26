@@ -235,9 +235,9 @@ variable "bot_initial_secrets" {
 }
 
 variable "bot_image" {
-  description = "Container image URI used when bot_create_ecr_repository = false. Defaults to the pinned SemVer GHCR release image (:0.1.2)."
+  description = "Container image URI used when bot_create_ecr_repository = false. Defaults to the pinned SemVer GHCR release image (:0.1.3)."
   type        = string
-  default     = "ghcr.io/e-serenity/serenity-bot:0.1.2"
+  default     = "ghcr.io/e-serenity/serenity-bot:0.1.3"
 }
 
 variable "bot_create_ecr_repository" {

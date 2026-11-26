@@ -46,6 +46,6 @@ resource "aws_dynamodb_table_item" "core_registration" {
     status      = { S = "ACTIVE" }
     environment = { S = var.environment }
     region      = { S = var.region }
-    version     = { S = "0.1.2" }
+    version     = { S = "0.1.3" }
   })
 }

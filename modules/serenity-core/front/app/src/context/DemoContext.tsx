@@ -37,7 +37,7 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
       'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-core',
     githubUrl:
       'https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/serenity-core',
-    version: '0.1.0',
+    version: '0.1.3',
     isAvailable: true,
     isCore: true,
     category: 'core',
@@ -56,7 +56,7 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
       'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-bot',
     githubUrl:
       'https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/serenity-bot',
-    version: '0.1.0',
+    version: '0.1.3',
     isAvailable: true,
     category: 'aiops',
     icon: 'Bot',
@@ -97,7 +97,7 @@ export const getModuleCatalog = (lang: Language): ModuleInfo[] => [
       'https://registry.terraform.io/modules/e-serenity/serenity-ops/aws/latest/submodules/serenity-ses',
     githubUrl:
       'https://github.com/e-serenity/terraform-aws-serenity-ops/tree/main/modules/serenity-ses',
-    version: '0.1.0',
+    version: '0.1.3',
     isAvailable: true,
     category: 'secops',
     icon: 'Mail',
@@ -207,8 +207,6 @@ export type AuthStatus = 'checking' | 'unauthenticated' | 'authenticated' | 'dem
 
 interface DemoContextType {
   isLiveMode: boolean;
-  hasLiveBackend: boolean;
-  setMode: (mode: 'live' | 'demo') => void;
   authStatus: AuthStatus;
   authConfig: AuthConfig | null;
   authError: string | null;
@@ -249,9 +247,18 @@ const DEFAULT_DEMO_MODULES = ['serenity-core', 'serenity-bot', 'serenity-ses'];
 
 export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('serenity_lang') : null;
-    return saved === 'en' || saved === 'fr' ? saved : 'fr';
+    if (typeof window === 'undefined') return 'en';
+    const saved = localStorage.getItem('serenity_lang');
+    if (saved === 'en' || saved === 'fr') return saved;
+    const browserLang = (navigator.languages?.[0] || navigator.language || '').toLowerCase();
+    return browserLang.startsWith('fr') ? 'fr' : 'en';
   });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -264,11 +271,10 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isStaticDemoHost = () => {
     if (typeof window === 'undefined') return true;
-    const params = new URLSearchParams(window.location.search);
-    return params.get('demo') === 'true' || window.location.hostname.includes('e-serenity.fr');
+    if (import.meta.env.VITE_DEMO_MODE === 'true') return true;
+    return window.location.hostname.includes('e-serenity.fr');
   };
 
-  const [hasLiveBackend, setHasLiveBackend] = useState<boolean>(false);
   const [isLiveMode, setIsLiveMode] = useState<boolean>(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus>(() =>
     isStaticDemoHost() ? 'demo' : 'checking'
@@ -358,7 +364,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!contentType.includes('application/json')) return false;
       const data = await res.json();
       if (data && data.mode === 'live') {
-        setHasLiveBackend(true);
         setIsLiveMode(true);
         if (data.accountId) setAccountId(data.accountId);
         if (data.environment) setEnvironment(data.environment);
@@ -434,7 +439,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         authConfigRef.current = cfg;
         setAuthConfig(cfg);
-        setHasLiveBackend(true);
 
         if (!cfg.enabled) {
           const ok = await fetchLiveStateInternal();
@@ -516,14 +520,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cancelled = true;
     };
   }, [fetchLiveStateInternal]);
-
-  const setMode = (mode: 'live' | 'demo') => {
-    if (mode === 'live' && hasLiveBackend) {
-      setIsLiveMode(true);
-    } else {
-      setIsLiveMode(false);
-    }
-  };
 
   const installedModules = isLiveMode
     ? new Set(liveInstalledModules)
@@ -984,8 +980,6 @@ export const DemoProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <DemoContext.Provider
       value={{
         isLiveMode,
-        hasLiveBackend,
-        setMode,
         authStatus,
         authConfig,
         authError,

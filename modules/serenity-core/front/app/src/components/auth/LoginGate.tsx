@@ -35,20 +35,20 @@ export const LoginGate: React.FC = () => {
           <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs font-medium">
             <Globe className="w-3.5 h-3.5 text-slate-400 ml-2 mr-1" />
             <button
-              onClick={() => setLanguage('fr')}
-              className={`px-2 py-1 rounded-md transition-colors ${
-                language === 'fr' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              FR
-            </button>
-            <button
               onClick={() => setLanguage('en')}
               className={`px-2 py-1 rounded-md transition-colors ${
                 language === 'en' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               EN
+            </button>
+            <button
+              onClick={() => setLanguage('fr')}
+              className={`px-2 py-1 rounded-md transition-colors ${
+                language === 'fr' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              FR
             </button>
           </div>
         </div>

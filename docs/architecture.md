@@ -121,9 +121,9 @@ Networking and compute resources are provisioned only when you deploy `serenity-
    When you provide an existing `cluster_arn` (with `capacity_provider_name` and `subnet_ids`), `serenity-bot` skips VPC, NAT Gateway, VPC Endpoint, and ECS cluster creation, and runs the bot service directly inside your cluster.
 3. **Bring-Your-Own VPC (`cluster_arn = ""`, `create_vpc = false`):**
    Provisions the `serenity-bot` ECS Managed Instances cluster and VPC Endpoints inside your existing `existing_vpc_id` and `subnet_ids`.
-4. **Container Image (Pinned `:0.1.2` Image vs Private AWS ECR):**
-   - **By default (`create_ecr_repository = false`):** `serenity-bot` pulls `ghcr.io/e-serenity/serenity-bot:0.1.2` so `terraform apply` works out of the box with a reproducible SemVer tag without a local Docker build step.
-   - **For production (`create_ecr_repository = true`):** Terraform provisions a private `aws_ecr_repository` in your AWS account and points ECS to it so you do not depend on an external registry. See the **[`modules/serenity-bot` guide](../modules/serenity-bot/README.md#container-image-default-stable-vs-private-aws-ecr-recommended-for-production)** for the `docker buildx build --platform linux/arm64` commands to build and push your image.
+4. **Container Image (Pinned `:0.1.3` Image vs Private AWS ECR):**
+   - **By default (`create_ecr_repository = false`):** `serenity-bot` pulls `ghcr.io/e-serenity/serenity-bot:0.1.3` so `terraform apply` works out of the box with a reproducible SemVer tag without a local Docker build step.
+   - **For production (`create_ecr_repository = true`):** Terraform provisions a private `aws_ecr_repository` in your AWS account and points ECS to it so you do not depend on an external registry. See the **[`modules/serenity-bot` guide](../modules/serenity-bot/README.md#container-image-default-013-vs-private-aws-ecr-recommended-for-production)** for the `docker buildx build --platform linux/arm64` commands to build and push your image.
 
 ---
 

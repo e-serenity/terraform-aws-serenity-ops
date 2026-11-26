@@ -412,3 +412,28 @@ def test_auth_mode_none_allows_requests_without_bearer_token(monkeypatch, rsa_ke
     resp = api.handler(_make_event("/api/state", token=None), None)
     assert resp["statusCode"] == 200
     assert json.loads(resp["body"])["mode"] == "live"
+
+
+def test_cognito_uuid_username_falls_back_to_email_for_display_name(monkeypatch, rsa_keypair):
+    issuer, client_id = _configure_auth(monkeypatch, rsa_keypair, allowed_groups=["serenity-admins"])
+    _mock_dynamodb_and_cw(monkeypatch)
+    now = int(time.time())
+    token = _sign_rs256_jwt(
+        {"alg": "RS256", "kid": "test-kid-1", "typ": "JWT"},
+        {
+            "iss": issuer,
+            "aud": client_id,
+            "sub": "f1c9c01e-5051-7002-7d61-00502d1c28e3",
+            "cognito:username": "f1c9c01e-5051-7002-7d61-00502d1c28e3",
+            "email": "ops@e-serenity.fr",
+            "cognito:groups": ["serenity-admins"],
+            "exp": now + 300,
+        },
+        rsa_keypair["n"],
+        rsa_keypair["d"],
+    )
+    resp = api.handler(_make_event("/api/state", token=token), None)
+    assert resp["statusCode"] == 200
+    user = json.loads(resp["body"])["currentUser"]
+    assert user["identity"] == "ops@e-serenity.fr"
+    assert user["name"] == "ops@e-serenity.fr"

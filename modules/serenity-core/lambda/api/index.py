@@ -317,7 +317,7 @@ def _extract_user_context(claims: dict, auth_config: dict) -> dict:
         "authenticated": True,
         "identity": identity,
         "email": email,
-        "name": str(claims.get("name") or username),
+        "name": str(claims.get("name") or email or username),
         "sub": str(claims.get("sub") or ""),
         "groups": groups,
         "canWrite": can_write,

@@ -132,6 +132,8 @@ resource "aws_lambda_function_url" "dashboard_api" {
   authorization_type = "NONE"
 }
 
+# Serialize Lambda resource-based policy mutations (Function URL + permissions)
+# to avoid AWS Lambda 409 ResourceConflictException during concurrent AddPermission/RemovePermission calls.
 resource "aws_lambda_permission" "dashboard_api_url" {
   count                  = var.enable_dashboard ? 1 : 0
   statement_id           = "AllowPublicFunctionUrlWithSecretHeader"
@@ -139,6 +141,8 @@ resource "aws_lambda_permission" "dashboard_api_url" {
   function_name          = aws_lambda_function.dashboard_api[0].function_name
   principal              = "*"
   function_url_auth_type = "NONE"
+
+  depends_on = [aws_lambda_function_url.dashboard_api]
 }
 
 resource "aws_lambda_permission" "dashboard_api_invoke" {
@@ -148,4 +152,6 @@ resource "aws_lambda_permission" "dashboard_api_invoke" {
   function_name            = aws_lambda_function.dashboard_api[0].function_name
   principal                = "*"
   invoked_via_function_url = true
+
+  depends_on = [aws_lambda_permission.dashboard_api_url]
 }

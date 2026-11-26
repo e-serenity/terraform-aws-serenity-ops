@@ -66,8 +66,8 @@ run "default_finops_and_security_hardening" {
   }
 
   assert {
-    condition     = var.bot_image == "ghcr.io/e-serenity/serenity-bot:0.1.2"
-    error_message = "bot_image must default to the pinned SemVer tag :0.1.2."
+    condition     = var.bot_image == "ghcr.io/e-serenity/serenity-bot:0.1.3"
+    error_message = "bot_image must default to the pinned SemVer tag :0.1.3."
   }
 
   assert {

@@ -76,7 +76,7 @@ export function extractUserFromToken(token: string, allowedGroups: string[]): Au
   return {
     identity: email || username,
     email,
-    name: (typeof claims.name === 'string' && claims.name) || username,
+    name: (typeof claims.name === 'string' && claims.name) || email || username,
     groups,
     canWrite,
   };
